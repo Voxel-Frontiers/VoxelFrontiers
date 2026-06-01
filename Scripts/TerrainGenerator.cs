@@ -196,6 +196,35 @@ public partial class TerrainGenerator : Node3D{
 		meshInstance.Position = new Vector3(chunk.ChunkCoords.X * ChunkSize, chunk.ChunkCoords.Y * ChunkSize,
 			chunk.ChunkCoords.Z * ChunkSize);
 
+		// Create or get the CustomModelsContainer
+		Node3D customModelsContainer = meshInstance.GetNodeOrNull<Node3D>("CustomModels");
+		if (customModelsContainer == null){
+			customModelsContainer = new Node3D();
+			customModelsContainer.Name = "CustomModels";
+			meshInstance.AddChild(customModelsContainer);
+		}
+		else{
+			// Clear existing custom models if regenerating mesh
+			foreach (Node child in customModelsContainer.GetChildren()){
+				child.QueueFree();
+			}
+		}
+
+		// Create or get the CollisionBodiesContainer
+		Node3D collisionBodiesContainer = meshInstance.GetNodeOrNull<Node3D>("CollisionBodies");
+		if (collisionBodiesContainer == null){
+			collisionBodiesContainer = new Node3D();
+			collisionBodiesContainer.Name = "CollisionBodies";
+			meshInstance.AddChild(collisionBodiesContainer);
+		}
+		else{
+			// Clear existing collision bodies if regenerating mesh
+			foreach (Node child in collisionBodiesContainer.GetChildren()){
+				child.QueueFree();
+			}
+		}
+
+
 		ArrayMesh arrayMesh = new ArrayMesh();
 
 		List<Vector3> vertices = new List<Vector3>();
@@ -226,6 +255,63 @@ public partial class TerrainGenerator : Node3D{
 
 					NodeRegistry.NodeDefinition blockDef = NodeRegistry.GetNodeDefinition(blockId);
 					if (blockDef == null) continue; // Should not happen if IDs are managed correctly
+
+					// Handle custom 3D models
+					if (!string.IsNullOrEmpty(blockDef.MeshPath)){
+						Resource modelResource = ResourceLoader.Load(blockDef.MeshPath);
+
+						if (modelResource == null){
+							GD.PrintErr(
+								$"Failed to load custom model from path: {blockDef.MeshPath} for block {blockDef.Name}.");
+						}
+						else{
+							Node3D customModelInstance = null;
+
+							if (modelResource is PackedScene packedScene){
+								customModelInstance = packedScene.Instantiate<Node3D>();
+							}
+							else if (modelResource is Mesh mesh){
+								MeshInstance3D meshInstance3D = new MeshInstance3D();
+								meshInstance3D.Mesh = mesh;
+								customModelInstance = meshInstance3D;
+							}
+							else{
+								GD.PrintErr(
+									$"Unsupported custom model resource type for path: {blockDef.MeshPath}. Expected PackedScene or Mesh.");
+							}
+
+							if (customModelInstance != null){
+								// Position the model correctly within the block space
+								// Assuming models are designed around their origin (0,0,0) and fit within a 1x1x1 block
+								// We center it in the block.
+								customModelInstance.Position = new Vector3(x + 0.5f, y + 0.5f, z + 0.5f);
+								customModelsContainer.AddChild(customModelInstance);
+
+								// Add default collision if the custom model doesn't have any
+								bool hasCollision = false;
+								foreach (Node child in customModelInstance.GetChildren()){
+									if (child is StaticBody3D || child is CollisionShape3D){
+										hasCollision = true;
+										break;
+									}
+								}
+
+								if (!hasCollision){
+									StaticBody3D staticBody = new StaticBody3D();
+									CollisionShape3D collisionShape = new CollisionShape3D();
+									BoxShape3D boxShape = new BoxShape3D();
+
+									boxShape.Size = new Vector3(1, 1, 1); // A 1x1x1 collision box
+									collisionShape.Shape = boxShape;
+									staticBody.AddChild(collisionShape);
+									customModelInstance.AddChild(staticBody);
+								}
+							}
+						}
+
+						continue; // Skip regular mesh generation for this block
+					}
+
 
 					// Calculate world position of the current block's origin
 					Vector3I currentBlockWorldPos = new Vector3I(
@@ -259,6 +345,60 @@ public partial class TerrainGenerator : Node3D{
 								}
 							}
 
+							// Add collision for normal blocks if walkable
+							if (blockDef.OriginalNodeBlock.walkable){
+								bool customCollisionApplied = false;
+								// Check for custom collision_box definition
+								if (blockDef.OriginalNodeBlock.collision_box != null &&
+									blockDef.OriginalNodeBlock.collision_box.type == "fixed" &&
+									blockDef.OriginalNodeBlock.collision_box._fixed != null &&
+									blockDef.OriginalNodeBlock.collision_box._fixed.Length > 0)
+								{
+									foreach (BoxDef boxDef in blockDef.OriginalNodeBlock.collision_box._fixed)
+									{
+										if (boxDef.sides != null && boxDef.sides.Length == 6)
+										{
+											float min_x = boxDef.sides[0];
+											float min_y = boxDef.sides[1];
+											float min_z = boxDef.sides[2];
+											float max_x = boxDef.sides[3];
+											float max_y = boxDef.sides[4];
+											float max_z = boxDef.sides[5];
+
+											Vector3 size = new Vector3(max_x - min_x, max_y - min_y, max_z - min_z);
+											Vector3 center = new Vector3(min_x + size.X / 2.0f, min_y + size.Y / 2.0f, min_z + size.Z / 2.0f);
+
+											StaticBody3D staticBody = new StaticBody3D();
+											CollisionShape3D collisionShape = new CollisionShape3D();
+											BoxShape3D boxShape = new BoxShape3D();
+
+											boxShape.Size = size; // Use custom size
+											collisionShape.Shape = boxShape;
+											staticBody.AddChild(collisionShape);
+											staticBody.Position = new Vector3(x + center.X, y + center.Y, z + center.Z); // Use custom center
+											collisionBodiesContainer.AddChild(staticBody);
+											customCollisionApplied = true;
+										}
+										else
+										{
+											GD.PrintErr($"Invalid BoxDef.sides array for block {blockDef.Name}. Expected 6 floats, got {boxDef.sides?.Length ?? 0}.");
+										}
+									}
+								}
+
+								// Fallback to default 1x1x1 collision if no custom collision was applied
+								if (!customCollisionApplied)
+								{
+									StaticBody3D staticBody = new StaticBody3D();
+									CollisionShape3D collisionShape = new CollisionShape3D();
+									BoxShape3D boxShape = new BoxShape3D();
+									boxShape.Size = new Vector3(1, 1, 1); // A 1x1x1 collision box
+									collisionShape.Shape = boxShape;
+									staticBody.AddChild(collisionShape);
+									staticBody.Position = new Vector3(x + 0.5f, y + 0.5f, z + 0.5f); // Center the collision box
+									collisionBodiesContainer.AddChild(staticBody);
+								}
+							}
 							break;
 						case "plantlike_x": // Two intersecting quads (X shape)
 							_AddPlantXGeometry(x, y, z, blockDef, vertices, normals, uvs, indices, ref vertexIndex);
@@ -266,8 +406,11 @@ public partial class TerrainGenerator : Node3D{
 						case "plantlike_star": // Three intersecting quads (* shape)
 							_AddPlantStarGeometry(x, y, z, blockDef, vertices, normals, uvs, indices, ref vertexIndex);
 							break;
-						case "plantlike_mcbox": // Single central quad (MC box style)
-							_AddPlantMCBoxGeometry(x, y, z, blockDef, vertices, normals, uvs, indices, ref vertexIndex);
+						case "plantlike_simple": // Single central quad (formerly plantlike_mcbox)
+							_AddPlantSimpleGeometry(x, y, z, blockDef, vertices, normals, uvs, indices, ref vertexIndex);
+							break;
+						case "plantlike_box": // Two intersecting axis-aligned quads ('+' shape)
+							_AddPlantBoxGeometry(x, y, z, blockDef, vertices, normals, uvs, indices, ref vertexIndex);
 							break;
 						default: // Fallback to normal cube for unknown drawtypes
 							GD.PrintErr(
@@ -282,7 +425,61 @@ public partial class TerrainGenerator : Node3D{
 										ref vertexIndex);
 								}
 							}
+							// Add collision for unknown drawtypes if walkable (defaulting to normal behavior)
+							if (blockDef.OriginalNodeBlock.walkable){
+								bool customCollisionApplied = false;
 
+								// Check for custom collision_box definition
+								if (blockDef.OriginalNodeBlock.collision_box != null &&
+									blockDef.OriginalNodeBlock.collision_box.type == "fixed" &&
+									blockDef.OriginalNodeBlock.collision_box._fixed != null &&
+									blockDef.OriginalNodeBlock.collision_box._fixed.Length > 0)
+								{
+									foreach (BoxDef boxDef in blockDef.OriginalNodeBlock.collision_box._fixed)
+									{
+										if (boxDef.sides != null && boxDef.sides.Length == 6)
+										{
+											float min_x = boxDef.sides[0];
+											float min_y = boxDef.sides[1];
+											float min_z = boxDef.sides[2];
+											float max_x = boxDef.sides[3];
+											float max_y = boxDef.sides[4];
+											float max_z = boxDef.sides[5];
+
+											Vector3 size = new Vector3(max_x - min_x, max_y - min_y, max_z - min_z);
+											Vector3 center = new Vector3(min_x + size.X / 2.0f, min_y + size.Y / 2.0f, min_z + size.Z / 2.0f);
+
+											StaticBody3D staticBody = new StaticBody3D();
+											CollisionShape3D collisionShape = new CollisionShape3D();
+											BoxShape3D boxShape = new BoxShape3D();
+
+											boxShape.Size = size; // Use custom size
+											collisionShape.Shape = boxShape;
+											staticBody.AddChild(collisionShape);
+											staticBody.Position = new Vector3(x + center.X, y + center.Y, z + center.Z); // Use custom center
+											collisionBodiesContainer.AddChild(staticBody);
+											customCollisionApplied = true;
+										}
+										else
+										{
+											GD.PrintErr($"Invalid BoxDef.sides array for block {blockDef.Name}. Expected 6 floats, got {boxDef.sides?.Length ?? 0}.");
+										}
+									}
+								}
+
+								// Fallback to default 1x1x1 collision if no custom collision was applied
+								if (!customCollisionApplied)
+								{
+									StaticBody3D staticBody = new StaticBody3D();
+									CollisionShape3D collisionShape = new CollisionShape3D();
+									BoxShape3D boxShape = new BoxShape3D();
+									boxShape.Size = new Vector3(1, 1, 1); // A 1x1x1 collision box
+									collisionShape.Shape = boxShape;
+									staticBody.AddChild(collisionShape);
+									staticBody.Position = new Vector3(x + 0.5f, y + 0.5f, z + 0.5f); // Center the collision box
+									collisionBodiesContainer.AddChild(staticBody);
+								}
+							}
 							break;
 					}
 				}
@@ -421,7 +618,7 @@ public partial class TerrainGenerator : Node3D{
 		indices.Add(vertexIndex + 3);
 		vertexIndex += 4;
 
-		// Add Quad 1 (back face - reversed normal)
+		// Add Quad 1 (back face - reversed order and normal)
 		for (int i = 0; i < 4; i++){
 			vertices.Add(quad1Vertices[3 - i] + blockCenter); // Reverse order for back face
 			normals.Add(-quad1Normal);
@@ -453,7 +650,7 @@ public partial class TerrainGenerator : Node3D{
 		indices.Add(vertexIndex + 3);
 		vertexIndex += 4;
 
-		// Add Quad 2 (back face - reversed normal)
+		// Add Quad 2 (back face - reversed order and normal)
 		for (int i = 0; i < 4; i++){
 			vertices.Add(quad2Vertices[3 - i] + blockCenter); // Reverse order for back face
 			normals.Add(-quad2Normal);
@@ -546,9 +743,10 @@ public partial class TerrainGenerator : Node3D{
 	}
 
 	/// <summary>
-	/// Helper to add 'MC Box' shaped plant geometry (single central quad facing +Z) to the mesh data lists.
+	/// Helper to add 'simple' plant geometry (single central quad facing +Z) to the mesh data lists.
+	/// Renamed from _AddPlantMCBoxGeometry.
 	/// </summary>
-	private void _AddPlantMCBoxGeometry(int x, int y, int z, NodeRegistry.NodeDefinition blockDef,
+	private void _AddPlantSimpleGeometry(int x, int y, int z, NodeRegistry.NodeDefinition blockDef,
 		List<Vector3> vertices, List<Vector3> normals, List<Vector2> uvs, List<int> indices, ref int vertexIndex){
 		Vector3 blockCenter = new Vector3(x + 0.5f, y + 0.5f, z + 0.5f);
 		float halfSize = 0.5f; // Half the size of the block for vertex positioning
@@ -584,7 +782,8 @@ public partial class TerrainGenerator : Node3D{
 		for (int i = 0; i < 4; i++){
 			vertices.Add(quadVertices[i] + blockCenter);
 			normals.Add(quadNormal);
-			uvs.Add(new Vector2(uvRect.Position.X + baseUVs[i].X * uvRect.Size.X,
+			uvs.Add(new Vector2(
+				uvRect.Position.X + baseUVs[i].X * uvRect.Size.X,
 				uvRect.Position.Y + baseUVs[i].Y * uvRect.Size.Y));
 		}
 
@@ -610,6 +809,96 @@ public partial class TerrainGenerator : Node3D{
 		indices.Add(vertexIndex + 0);
 		indices.Add(vertexIndex + 2);
 		indices.Add(vertexIndex + 3);
+		vertexIndex += 4;
+	}
+
+	/// <summary>
+	/// Helper to add 'box' shaped plant geometry (two intersecting axis-aligned quads, '+' shape) to the mesh data lists.
+	/// </summary>
+	private void _AddPlantBoxGeometry(int x, int y, int z, NodeRegistry.NodeDefinition blockDef,
+		List<Vector3> vertices, List<Vector3> normals, List<Vector2> uvs, List<int> indices, ref int vertexIndex){
+		Vector3 blockCenter = new Vector3(x + 0.5f, y + 0.5f, z + 0.5f);
+		float halfSize = 0.5f; // Half the size of the block for vertex positioning
+
+		// Base UVs for a square face
+		Vector2[] baseUVs ={
+			new Vector2(0, 1), new Vector2(1, 1), new Vector2(1, 0), new Vector2(0, 0)
+		};
+
+		string texturePath = "";
+		if (blockDef.TexturePaths.Length > 0){
+			texturePath = blockDef.TexturePaths[0]; // Plants typically use one texture
+		}
+
+		if (string.IsNullOrEmpty(texturePath) || !_textureUVRects.ContainsKey(texturePath)){
+			GD.PrintErr($"Missing texture or UV rect for path: {texturePath} for plant '{blockDef.Name}'. Skipping.");
+			return;
+		}
+
+		Rect2 uvRect = _textureUVRects[texturePath];
+
+		// Quad 1: Aligned with XZ plane, facing +Z and -Z
+		// Vertices for a quad facing +Z, centered at (0,0,0)
+		Vector3[] quad1Vertices = new Vector3[]{
+			new Vector3(-halfSize, -halfSize, 0), // Bottom-left
+			new Vector3(halfSize, -halfSize, 0), // Bottom-right
+			new Vector3(halfSize, halfSize, 0), // Top-right
+			new Vector3(-halfSize, halfSize, 0) // Top-left
+		};
+		Vector3 quad1Normal = Vector3.Forward;
+
+		// Add front face of Quad 1
+		for (int i = 0; i < 4; i++){
+			vertices.Add(quad1Vertices[i] + blockCenter);
+			normals.Add(quad1Normal);
+			uvs.Add(new Vector2(uvRect.Position.X + baseUVs[i].X * uvRect.Size.X,
+				uvRect.Position.Y + baseUVs[i].Y * uvRect.Size.Y));
+		}
+		indices.Add(vertexIndex + 0); indices.Add(vertexIndex + 1); indices.Add(vertexIndex + 2);
+		indices.Add(vertexIndex + 0); indices.Add(vertexIndex + 2); indices.Add(vertexIndex + 3);
+		vertexIndex += 4;
+
+		// Add back face of Quad 1
+		for (int i = 0; i < 4; i++){
+			vertices.Add(quad1Vertices[3 - i] + blockCenter); // Reverse order for back face
+			normals.Add(-quad1Normal);
+			uvs.Add(new Vector2(uvRect.Position.X + baseUVs[3 - i].X * uvRect.Size.X,
+				uvRect.Position.Y + baseUVs[3 - i].Y * uvRect.Size.Y));
+		}
+		indices.Add(vertexIndex + 0); indices.Add(vertexIndex + 1); indices.Add(vertexIndex + 2);
+		indices.Add(vertexIndex + 0); indices.Add(vertexIndex + 2); indices.Add(vertexIndex + 3);
+		vertexIndex += 4;
+
+		// Quad 2: Aligned with XZ plane, facing +X and -X (rotated 90 degrees around Y from Quad 1)
+		// Vertices for a quad facing +X, centered at (0,0,0)
+		Vector3[] quad2Vertices = new Vector3[]{
+			new Vector3(0, -halfSize, -halfSize), // Bottom-left (relative to new orientation)
+			new Vector3(0, -halfSize, halfSize),  // Bottom-right
+			new Vector3(0, halfSize, halfSize),   // Top-right
+			new Vector3(0, halfSize, -halfSize)   // Top-left
+		};
+		Vector3 quad2Normal = Vector3.Right;
+
+		// Add front face of Quad 2
+		for (int i = 0; i < 4; i++){
+			vertices.Add(quad2Vertices[i] + blockCenter);
+			normals.Add(quad2Normal);
+			uvs.Add(new Vector2(uvRect.Position.X + baseUVs[i].X * uvRect.Size.X,
+				uvRect.Position.Y + baseUVs[i].Y * uvRect.Size.Y));
+		}
+		indices.Add(vertexIndex + 0); indices.Add(vertexIndex + 1); indices.Add(vertexIndex + 2);
+		indices.Add(vertexIndex + 0); indices.Add(vertexIndex + 2); indices.Add(vertexIndex + 3);
+		vertexIndex += 4;
+
+		// Add back face of Quad 2
+		for (int i = 0; i < 4; i++){
+			vertices.Add(quad2Vertices[3 - i] + blockCenter); // Reverse order for back face
+			normals.Add(-quad2Normal);
+			uvs.Add(new Vector2(uvRect.Position.X + baseUVs[3 - i].X * uvRect.Size.X,
+				uvRect.Position.Y + baseUVs[3 - i].Y * uvRect.Size.Y));
+		}
+		indices.Add(vertexIndex + 0); indices.Add(vertexIndex + 1); indices.Add(vertexIndex + 2);
+		indices.Add(vertexIndex + 0); indices.Add(vertexIndex + 2); indices.Add(vertexIndex + 3);
 		vertexIndex += 4;
 	}
 

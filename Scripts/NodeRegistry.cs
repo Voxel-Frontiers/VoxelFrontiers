@@ -29,6 +29,7 @@ public partial class NodeRegistry : Node{
 		public string Name;
 		public string[] TexturePaths; // Paths to the texture images for each face
 		public bool IsTransparent;
+		public string MeshPath; // Path to a custom 3D model resource
 		public NodeBlock OriginalNodeBlock; // Reference to the original NodeBlock for full access
 	}
 
@@ -58,7 +59,7 @@ public partial class NodeRegistry : Node{
 		if (VF.Instance.registered_nodes == null || VF.Instance.registered_nodes.Count == 0){
 			GD.Print("NodeRegistry: VF.Instance.registered_nodes is empty. No nodes to populate.");
 			// We should at least register 'air' if it's not coming from Lua
-			RegisterInternalNode("Air", System.Array.Empty<string>(), true);
+			RegisterInternalNode("Air", System.Array.Empty<string>(), true, "");
 			return;
 		}
 
@@ -71,7 +72,7 @@ public partial class NodeRegistry : Node{
 		// Assuming 'Air' is a fundamental block that might not always be explicitly registered in Lua
 		if (!VF.Instance.registered_nodes.ContainsKey("air")) // Minetest uses lowercase for node names
 		{
-			RegisterInternalNode("Air", System.Array.Empty<string>(), true);
+			RegisterInternalNode("Air", System.Array.Empty<string>(), true, "");
 		}
 
 		foreach (var entry in VF.Instance.registered_nodes){
@@ -93,14 +94,14 @@ public partial class NodeRegistry : Node{
 			bool isTransparent = nodeBlock.use_texture_alpha != "opaque";
 
 			// Use the internal registration method to assign an ID and store the definition
-			RegisterInternalNode(nodeName, nodeBlock.Tiles, isTransparent, nodeBlock);
+			RegisterInternalNode(nodeName, nodeBlock.Tiles, isTransparent, nodeBlock.MeshPath, nodeBlock);
 		}
 	}
 
 	/// <summary>
 	/// Internal method to register a node definition.
 	/// </summary>
-	private int RegisterInternalNode(string name, string[] texturePaths, bool isTransparent,
+	private int RegisterInternalNode(string name, string[] texturePaths, bool isTransparent, string meshPath,
 		NodeBlock originalNodeBlock = null){
 		if (_nodesByName.ContainsKey(name)){
 			GD.PrintErr($"Node with name '{name}' already registered in NodeRegistry.");
@@ -112,6 +113,7 @@ public partial class NodeRegistry : Node{
 			Name = name,
 			TexturePaths = texturePaths,
 			IsTransparent = isTransparent,
+			MeshPath = meshPath,
 			OriginalNodeBlock = originalNodeBlock
 		};
 
@@ -132,7 +134,7 @@ public partial class NodeRegistry : Node{
 		_nodesById[def.Id] = def;
 		_nodesByName[name] = def;
 		GD.Print(
-			$"Registered node in C# NodeRegistry: {name} (ID: {def.Id}) with {texturePaths.Length} texture(s). Transparent: {isTransparent}");
+			$"Registered node in C# NodeRegistry: {name} (ID: {def.Id}) with {texturePaths.Length} texture(s). Transparent: {isTransparent}, MeshPath: {meshPath}");
 		return def.Id;
 	}
 

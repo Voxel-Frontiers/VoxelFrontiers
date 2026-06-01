@@ -94,7 +94,7 @@ public class BlockBox{
 				default:
 					Logging.Log("error", "Invalid 'type' given to BlockBox.");
 					return;
-					break;
+		//			break;
 			}
 
 			_type = value;
@@ -124,5 +124,5 @@ public class BlockBox{
 }
 
 public class BoxDef{
-	private float[] sides;
+	public float[] sides; // Changed from private to public
 }

@@ -1,4 +1,4 @@
-#region
+#region Usings
 
 using System.Text;
 using Godot;
@@ -49,6 +49,7 @@ public partial class NodeBlock : Item{
 	public bool buildable_to = false; // Is this node replaceable, when another node is placed?
 	public string drawtype = "normal";
 	public string[] Tiles = System.Array.Empty<string>(); // Textures of node; +Y, -Y, +X, -X, +Z, -Z
+	public string MeshPath = ""; // Path to a custom 3D model resource
 
 	// Function References.
 	public LuaFunctionRef on_construct;
@@ -134,6 +135,8 @@ public partial class NodeBlock : Item{
 		sb.AppendLine(drawtype.ToString());
 		sb.Append("Tiles: ");
 		sb.AppendLine(string.Join(", ", Tiles));
+		sb.Append("MeshPath: ");
+		sb.AppendLine(MeshPath);
 
 
 		sb.Append("[callback-function]on_construct: ");
@@ -264,6 +267,7 @@ public partial class NodeBlock : Item{
 	}
 
 	/*
+	 From the Luanti documentation...
 	 * {
     -- <all fields allowed in item definitions>
 
