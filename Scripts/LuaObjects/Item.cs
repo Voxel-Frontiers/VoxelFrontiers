@@ -372,7 +372,7 @@ public partial class Item : RefCounted {
 			_lightsource = value;
 			if (_lightsource < 0)
 				_lightsource = 0;
-			if (_lightsource > MCLPP.Instance.LIGHT_MAX) _lightsource = MCLPP.Instance.LIGHT_MAX;
+			if (_lightsource > VF.Instance.LIGHT_MAX) _lightsource = VF.Instance.LIGHT_MAX;
 		}
 	}
 

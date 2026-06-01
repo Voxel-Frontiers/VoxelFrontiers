@@ -48,7 +48,7 @@ public partial class ItemStack : Item {
 		get { return name; }
 		set {
 			// try to find the named definition.
-			FindResult x = MCLPP.Instance.FindItem(value);
+			FindResult x = VF.Instance.FindItem(value);
 			if (x.success) {
 				definition = x.definition;
 				itemType = x.type;

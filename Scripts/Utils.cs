@@ -477,6 +477,7 @@ public enum LanguageCodes {
 	de = 1,
 	fr = 2,
 	ja = 3,
-	es = 4
+	es = 4,
+	br = 5
 }
 // Namespace.

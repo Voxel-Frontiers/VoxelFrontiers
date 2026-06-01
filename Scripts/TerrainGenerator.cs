@@ -33,7 +33,7 @@ public partial class TerrainGenerator : Node3D
         }
 
         // Populate the NodeRegistry with definitions from MCLPP
-        NodeRegistry.PopulateFromMCLPP();
+        NodeRegistry.PopulateFromVF();
 
         // 1. Prepare the texture atlas and material
         GenerateTextureAtlasAndMaterial();

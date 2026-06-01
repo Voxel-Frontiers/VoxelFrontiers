@@ -10,7 +10,7 @@ using Godot;
 #region License / Copyright
 
 /*
- * Copyright © 2023, Michieal.
+ * Copyright © 2023-2026, Michieal.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ public partial class LuaController : Node {
 	private Callable print;
 
 	// API Objects
-	private MCLPP Mclpp = MCLPP.Instance;
+	private VF VFcore = VF.Instance;
 
 	#region Ctor / Dtor
 
@@ -62,7 +62,7 @@ public partial class LuaController : Node {
 		};
 		lua.BindLibraries(libraries);
 
-		//override the built in lua 'print' function to use the logging.
+		//override the built-in lua 'print' function to use the logging.
 		print = new Callable(this, MethodName.LuaPrint);
 		lua.PushVariant("print", print);
 
@@ -92,7 +92,7 @@ public partial class LuaController : Node {
 	internal void RegisterAPI() {
 		// Removed in favor of just aliasing it in the builtin.lua code.
 		// CreateGlobalVar("minetest", Minetest);
-		CreateGlobalVar("mclpp", Mclpp);
+		CreateGlobalVar("vfcore", VFcore);
 		Item _item = new Item();
 		var _item_ = new Callable(_item, Item.MethodName.CreateItem);
 		LuaCallableExtra item_wtuple = LuaCallableExtra.WithTuple(_item_, 0);
@@ -126,7 +126,7 @@ public partial class LuaController : Node {
 
 	public override void _Ready() {
 		Variant error = lua.DoString(@"
-					mclpp.log (""system"" , ""Lua System Ready."")
+					vfcore.log (""system"" , ""Lua System Ready."")
 				");
 		try {
 			LuaError _Error = (LuaError) error;

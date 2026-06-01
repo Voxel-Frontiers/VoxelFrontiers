@@ -2,7 +2,7 @@ using Godot;
 using System.Collections.Generic;
 using ApophisSoftware.LuaObjects; // Assuming NodeBlock is in this namespace
 
-public class NodeRegistry : Node
+public partial class NodeRegistry : Node
 {
     public class NodeDefinition
     {
@@ -19,29 +19,29 @@ public class NodeRegistry : Node
 
     public override void _Ready()
     {
-        // This NodeRegistry will be populated by MCLPP's registered nodes.
-        // It's crucial that MCLPP.Instance is ready and has registered its nodes
+        // This NodeRegistry will be populated by VF's registered nodes.
+        // It's crucial that VF.Instance is ready and has registered its nodes
         // before this _Ready method attempts to access them.
-        // If MCLPP is an Autoload, its _Ready will typically run before other nodes.
-        PopulateFromMCLPP();
-        GD.Print("NodeRegistry initialized and populated from MCLPP.");
+        // If VF is an Autoload, its _Ready will typically run before other nodes.
+        PopulateFromVF();
+        GD.Print("NodeRegistry initialized and populated from VF.");
     }
 
     /// <summary>
-    /// Populates this NodeRegistry with definitions from MCLPP.Instance.registered_nodes.
-    /// This should be called after MCLPP has finished registering all its Lua-defined nodes.
+    /// Populates this NodeRegistry with definitions from VF.Instance.registered_nodes.
+    /// This should be called after VF has finished registering all its Lua-defined nodes.
     /// </summary>
-    public void PopulateFromMCLPP()
+    public void PopulateFromVF()
     {
-        if (MCLPP.Instance == null)
+        if (VF.Instance == null)
         {
-            GD.PrintErr("NodeRegistry: MCLPP.Instance is null. Cannot populate nodes.");
+            GD.PrintErr("NodeRegistry: VF.Instance is null. Cannot populate nodes.");
             return;
         }
 
-        if (MCLPP.Instance.registered_nodes == null || MCLPP.Instance.registered_nodes.Count == 0)
+        if (VF.Instance.registered_nodes == null || VF.Instance.registered_nodes.Count == 0)
         {
-            GD.Print("NodeRegistry: MCLPP.Instance.registered_nodes is empty. No nodes to populate.");
+            GD.Print("NodeRegistry: VF.Instance.registered_nodes is empty. No nodes to populate.");
             // We should at least register 'air' if it's not coming from Lua
             RegisterInternalNode("Air", System.Array.Empty<string>(), true);
             return;
@@ -54,12 +54,12 @@ public class NodeRegistry : Node
 
         // Register 'Air' as ID 0 if it's not already registered by Lua
         // Assuming 'Air' is a fundamental block that might not always be explicitly registered in Lua
-        if (!MCLPP.Instance.registered_nodes.ContainsKey("air")) // Minetest uses lowercase for node names
+        if (!VF.Instance.registered_nodes.ContainsKey("air")) // Minetest uses lowercase for node names
         {
             RegisterInternalNode("Air", System.Array.Empty<string>(), true);
         }
 
-        foreach (var entry in MCLPP.Instance.registered_nodes)
+        foreach (var entry in VF.Instance.registered_nodes)
         {
             string nodeName = entry.Key;
             NodeBlock nodeBlock = entry.Value;

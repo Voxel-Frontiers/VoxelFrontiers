@@ -33,7 +33,7 @@ using Array = Godot.Collections.Array;
 
 namespace ApophisSoftware.LuaObjects;
 
-public partial class MCLPP : RefCounted {
+public partial class VF : RefCounted {
 	private string _mod_name = "";
 
 	private readonly System.Collections.Generic.Dictionary<string, Coroutine> ABMs = new();
@@ -993,17 +993,17 @@ public partial class MCLPP : RefCounted {
 
 	#region CTOR
 
-	private static MCLPP _instance;
+	private static VF _instance;
 
-	public static MCLPP Instance {
+	public static VF Instance {
 		get {
-			if (_instance == null) _instance = new MCLPP();
+			if (_instance == null) _instance = new VF();
 
 			return _instance;
 		}
 	}
 
-	private MCLPP() {
+	private VF() {
 		// Private constructor to prevent external instantiation
 	}
 
