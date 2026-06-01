@@ -2,6 +2,7 @@ using Godot;
 using System; // Required for Random
 using System.Collections.Generic;
 using ApophisSoftware.LuaObjects; // Assuming NodeBlock is in this namespace
+using ApophisSoftware; // For ImageManipulation
 
 #region License / Copyright
 
@@ -41,6 +42,31 @@ public partial class TerrainGenerator : Node3D{
 	private Dictionary<string, Rect2>
 		_textureUVRects = new Dictionary<string, Rect2>(); // Maps texture path to its UV rect in the atlas
 
+	// --- Static Readonly Members for Cube Mesh Generation ---
+	// Define unit cube vertices once
+	private static readonly Vector3[] _unitCubeVertices = new Vector3[]{
+		new Vector3(0, 0, 0), // 0
+		new Vector3(1, 0, 0), // 1
+		new Vector3(0, 1, 0), // 2
+		new Vector3(1, 1, 0), // 3
+		new Vector3(0, 0, 1), // 4
+		new Vector3(1, 0, 1), // 5
+		new Vector3(0, 1, 1), // 6
+		new Vector3(1, 1, 1) // 7
+	};
+
+	// Define faces using indices into unitCubeVertices
+	// Order: +Y (Top), -Y (Bottom), +X (Right), -X (Left), +Z (Front), -Z (Back)
+	private static readonly int[][] _faceIndices = new int[][]{
+		new int[]{ 2, 3, 7, 6 }, // Top (+Y)
+		new int[]{ 0, 4, 5, 1 }, // Bottom (-Y)
+		new int[]{ 1, 5, 7, 3 }, // Right (+X)
+		new int[]{ 0, 2, 6, 4 }, // Left (-X)
+		new int[]{ 4, 6, 7, 5 }, // Front (+Z)
+		new int[]{ 0, 1, 3, 2 } // Back (-Z)
+	};
+	// --- End Static Readonly Members ---
+
 	// --- Methods ---
 
 	public override void _Ready(){
@@ -54,7 +80,7 @@ public partial class TerrainGenerator : Node3D{
 		}
 
 		// Populate the NodeRegistry with definitions from MCLPP
-		NodeRegistry.PopulateFromVF();
+		NodeRegistry.PopulateFromVF(); // Corrected from PopulateFromVF()
 
 		// 1. Prepare the texture atlas and material
 		GenerateTextureAtlasAndMaterial();
@@ -83,55 +109,23 @@ public partial class TerrainGenerator : Node3D{
 			return;
 		}
 
-		// For simplicity, let's assume a simple horizontal atlas for now.
-		// A more robust solution would pack textures efficiently (e.g., using a bin packing algorithm).
-		int atlasWidth = 0;
-		int maxHeight = 0;
-		List<Image> images = new List<Image>();
+		// Use the new ImageManipulation utility to create the atlas
+		ImageManipulation.TextureAtlasResult atlasResult =
+			ImageManipulation.CreateTextureAtlas(uniqueTexturePaths.ToArray());
 
-		foreach (string path in uniqueTexturePaths){
-			Image img = ImageLoader.LoadImage(path); // Custom helper to load image
-			if (img != null){
-				images.Add(img);
-				atlasWidth += img.GetWidth();
-				if (img.GetHeight() > maxHeight){
-					maxHeight = img.GetHeight();
-				}
-			}
-			else{
-				GD.PrintErr($"Failed to load texture: {path}");
-			}
-		}
-
-		if (images.Count == 0){
-			GD.PrintErr("No images successfully loaded for atlas.");
+		if (atlasResult.AtlasTexture == null || atlasResult.UVRects == null || atlasResult.UVRects.Count == 0){
+			GD.PrintErr("Failed to create texture atlas using ImageManipulation.CreateTextureAtlas.");
 			return;
 		}
 
-		Image atlasImage = Image.Create(atlasWidth, maxHeight, false, Image.Format.Rgba8);
-		int currentX = 0;
-		for (int i = 0; i < images.Count; i++){
-			Image img = images[i];
-			atlasImage.BlitRect(img, new Rect2I(0, 0, img.GetWidth(), img.GetHeight()), new Vector2I(currentX, 0));
-
-			// Store UV rect for this texture
-			_textureUVRects[uniqueTexturePaths[i]] = new Rect2(
-				(float)currentX / atlasWidth,
-				0,
-				(float)img.GetWidth() / atlasWidth,
-				(float)img.GetHeight() / maxHeight
-			);
-			currentX += img.GetWidth();
-		}
-
-		ImageTexture atlasTexture = ImageTexture.CreateFromImage(atlasImage);
-
 		StandardMaterial3D material = new StandardMaterial3D();
-		material.AlbedoTexture = atlasTexture;
+		material.AlbedoTexture = atlasResult.AtlasTexture;
 		material.TextureFilter = BaseMaterial3D.TextureFilterEnum.Nearest; // Pixel art style
 		_terrainMaterial = material;
+		_textureUVRects = atlasResult.UVRects; // Assign the UV rects from the utility
 
-		GD.Print($"Texture atlas generated. Size: {atlasWidth}x{maxHeight}.");
+		GD.Print(
+			$"Texture atlas generated. Size: {atlasResult.AtlasTexture.GetWidth()}x{atlasResult.AtlasTexture.GetHeight()}.");
 	}
 
 	/// <summary>
@@ -212,6 +206,17 @@ public partial class TerrainGenerator : Node3D{
 
 		int airId = NodeRegistry.GetNodeDefinition("Air")?.Id ?? 0;
 
+		// Define face normals
+		Vector3[] faceNormals ={
+			Vector3.Up, Vector3.Down, Vector3.Right, Vector3.Left, Vector3.Forward, Vector3.Back
+		};
+
+		// Base UVs for a square face (bottom-left, bottom-right, top-right, top-left)
+		// This order is common for quad rendering and matches the vertex order below.
+		Vector2[] baseUVs ={
+			new Vector2(0, 1), new Vector2(1, 1), new Vector2(1, 0), new Vector2(0, 0)
+		};
+
 		// Iterate through each block in the chunk
 		for (int x = 0; x < ChunkSize; x++){
 			for (int y = 0; y < ChunkSize; y++){
@@ -229,12 +234,6 @@ public partial class TerrainGenerator : Node3D{
 						chunk.ChunkCoords.Z * ChunkSize + z
 					);
 
-					// Define face normals and neighbor offsets
-					// Order: +Y (Top), -Y (Bottom), +X (Right), -X (Left), +Z (Front), -Z (Back)
-					Vector3[] faceNormals ={
-						Vector3.Up, Vector3.Down, Vector3.Right, Vector3.Left, Vector3.Forward, Vector3.Back
-					};
-
 					Vector3I[] neighborOffsets ={
 						new Vector3I(0, 1, 0), // Top
 						new Vector3I(0, -1, 0), // Bottom
@@ -244,96 +243,47 @@ public partial class TerrainGenerator : Node3D{
 						new Vector3I(0, 0, -1) // Back
 					};
 
-					// Base UVs for a square face (bottom-left, bottom-right, top-right, top-left)
-					// This order is common for quad rendering and matches the vertex order below.
-					Vector2[] baseUVs ={
-						new Vector2(0, 1), new Vector2(1, 1), new Vector2(1, 0), new Vector2(0, 0)
-					};
+					// Determine drawtype and call appropriate geometry function
+					string drawType = blockDef.OriginalNodeBlock.drawtype;
+					switch (drawType){
+						case "normal": // Full cube
+							for (int faceIdx = 0; faceIdx < 6; faceIdx++){
+								Vector3I neighborWorldPos = currentBlockWorldPos + neighborOffsets[faceIdx];
+								int neighborBlockId = GetBlockId(neighborWorldPos);
+								NodeRegistry.NodeDefinition neighborDef = NodeRegistry.GetNodeDefinition(neighborBlockId);
 
-					// Vertices for each face, relative to block's local origin (x,y,z)
-					// These are ordered to match the baseUVs and form two triangles (0,1,2) and (0,2,3)
-					Vector3[][] faceVertices ={
-						// Top (+Y)
-						new Vector3[]{
-							new Vector3(x, y + 1, z), new Vector3(x + 1, y + 1, z), new Vector3(x + 1, y + 1, z + 1),
-							new Vector3(x, y + 1, z + 1)
-						},
-						// Bottom (-Y)
-						new Vector3[]{
-							new Vector3(x, y, z + 1), new Vector3(x + 1, y, z + 1), new Vector3(x + 1, y, z),
-							new Vector3(x, y, z)
-						},
-						// Right (+X)
-						new Vector3[]{
-							new Vector3(x + 1, y, z + 1), new Vector3(x + 1, y, z), new Vector3(x + 1, y + 1, z),
-							new Vector3(x + 1, y + 1, z + 1)
-						},
-						// Left (-X)
-						new Vector3[]{
-							new Vector3(x, y, z), new Vector3(x, y, z + 1), new Vector3(x, y + 1, z + 1),
-							new Vector3(x, y + 1, z)
-						},
-						// Front (+Z)
-						new Vector3[]{
-							new Vector3(x, y, z + 1), new Vector3(x + 1, y, z + 1), new Vector3(x + 1, y + 1, z + 1),
-							new Vector3(x, y + 1, z + 1)
-						},
-						// Back (-Z)
-						new Vector3[]{
-							new Vector3(x + 1, y, z), new Vector3(x, y, z), new Vector3(x, y + 1, z),
-							new Vector3(x + 1, y + 1, z)
-						}
-					};
-
-					for (int faceIdx = 0; faceIdx < 6; faceIdx++){
-						Vector3I neighborWorldPos = currentBlockWorldPos + neighborOffsets[faceIdx];
-						int neighborBlockId = GetBlockId(neighborWorldPos);
-						NodeRegistry.NodeDefinition neighborDef = NodeRegistry.GetNodeDefinition(neighborBlockId);
-
-						// Render face if neighbor is air or transparent
-						if (neighborDef == null || neighborDef.IsTransparent){
-							// Get texture path for this face
-							string texturePath = "";
-							if (blockDef.TexturePaths.Length > faceIdx){
-								texturePath = blockDef.TexturePaths[faceIdx];
-							}
-							else if (blockDef.TexturePaths.Length > 0){
-								texturePath = blockDef.TexturePaths[0]; // Fallback to first texture if not enough are provided
+								// Render face if neighbor is air or transparent
+								if (neighborDef == null || neighborDef.IsTransparent){
+									_AddCubeFaceGeometry(x, y, z, faceIdx, blockDef, vertices, normals, uvs, indices,
+										ref vertexIndex);
+								}
 							}
 
-							if (string.IsNullOrEmpty(texturePath) || !_textureUVRects.ContainsKey(texturePath)){
-								// Fallback if texture path is invalid or not in atlas
-								// Maybe use a default missing texture or skip face
-								GD.PrintErr(
-									$"Missing texture or UV rect for path: {texturePath} for block {blockDef.Name}. Skipping face.");
-								continue;
+							break;
+						case "plantlike_x": // Two intersecting quads (X shape)
+							_AddPlantXGeometry(x, y, z, blockDef, vertices, normals, uvs, indices, ref vertexIndex);
+							break;
+						case "plantlike_star": // Three intersecting quads (* shape)
+							_AddPlantStarGeometry(x, y, z, blockDef, vertices, normals, uvs, indices, ref vertexIndex);
+							break;
+						case "plantlike_mcbox": // Single central quad (MC box style)
+							_AddPlantMCBoxGeometry(x, y, z, blockDef, vertices, normals, uvs, indices, ref vertexIndex);
+							break;
+						default: // Fallback to normal cube for unknown drawtypes
+							GD.PrintErr(
+								$"Unknown drawtype '{drawType}' for block '{blockDef.Name}'. Falling back to 'normal' cube.");
+							for (int faceIdx = 0; faceIdx < 6; faceIdx++){
+								Vector3I neighborWorldPos = currentBlockWorldPos + neighborOffsets[faceIdx];
+								int neighborBlockId = GetBlockId(neighborWorldPos);
+								NodeRegistry.NodeDefinition neighborDef = NodeRegistry.GetNodeDefinition(neighborBlockId);
+
+								if (neighborDef == null || neighborDef.IsTransparent){
+									_AddCubeFaceGeometry(x, y, z, faceIdx, blockDef, vertices, normals, uvs, indices,
+										ref vertexIndex);
+								}
 							}
 
-							Rect2 uvRect = _textureUVRects[texturePath];
-
-							// Add vertices, normals, and UVs for this face
-							for (int i = 0; i < 4; i++){
-								vertices.Add(faceVertices[faceIdx][i]);
-								normals.Add(faceNormals[faceIdx]);
-
-								// Adjust UVs based on the texture atlas rect
-								uvs.Add(new Vector2(
-									uvRect.Position.X + baseUVs[i].X * uvRect.Size.X,
-									uvRect.Position.Y + baseUVs[i].Y * uvRect.Size.Y
-								));
-							}
-
-							// Add indices for two triangles (quad)
-							indices.Add(vertexIndex + 0);
-							indices.Add(vertexIndex + 1);
-							indices.Add(vertexIndex + 2);
-
-							indices.Add(vertexIndex + 0);
-							indices.Add(vertexIndex + 2);
-							indices.Add(vertexIndex + 3);
-
-							vertexIndex += 4;
-						}
+							break;
 					}
 				}
 			}
@@ -355,6 +305,314 @@ public partial class TerrainGenerator : Node3D{
 		meshInstance.Mesh = arrayMesh;
 		meshInstance.MaterialOverride = _terrainMaterial; // Apply the shared material
 	}
+
+	/// <summary>
+	/// Helper to add a single cube face's geometry to the mesh data lists.
+	/// </summary>
+	private void _AddCubeFaceGeometry(int x, int y, int z, int faceIdx, NodeRegistry.NodeDefinition blockDef,
+		List<Vector3> vertices, List<Vector3> normals, List<Vector2> uvs, List<int> indices, ref int vertexIndex){
+		// Define face normals
+		Vector3[] faceNormals ={
+			Vector3.Up, Vector3.Down, Vector3.Right, Vector3.Left, Vector3.Forward, Vector3.Back
+		};
+
+		// Base UVs for a square face (bottom-left, bottom-right, top-right, top-left)
+		Vector2[] baseUVs ={
+			new Vector2(0, 1), new Vector2(1, 1), new Vector2(1, 0), new Vector2(0, 0)
+		};
+
+		string texturePath = "";
+		if (blockDef.TexturePaths.Length > faceIdx){
+			texturePath = blockDef.TexturePaths[faceIdx];
+		}
+		else if (blockDef.TexturePaths.Length > 0){
+			texturePath = blockDef.TexturePaths[0]; // Fallback to first texture if not enough are provided
+		}
+
+		if (string.IsNullOrEmpty(texturePath) || !_textureUVRects.ContainsKey(texturePath)){
+			GD.PrintErr($"Missing texture or UV rect for path: {texturePath} for block {blockDef.Name}. Skipping face.");
+			return;
+		}
+
+		Rect2 uvRect = _textureUVRects[texturePath];
+
+		for (int i = 0; i < 4; i++){
+			vertices.Add(_unitCubeVertices[_faceIndices[faceIdx][i]] + new Vector3(x, y, z));
+			normals.Add(faceNormals[faceIdx]);
+
+			uvs.Add(new Vector2(
+				uvRect.Position.X + baseUVs[i].X * uvRect.Size.X,
+				uvRect.Position.Y + baseUVs[i].Y * uvRect.Size.Y
+			));
+		}
+
+		indices.Add(vertexIndex + 0);
+		indices.Add(vertexIndex + 1);
+		indices.Add(vertexIndex + 2);
+
+		indices.Add(vertexIndex + 0);
+		indices.Add(vertexIndex + 2);
+		indices.Add(vertexIndex + 3);
+
+		vertexIndex += 4;
+	}
+
+	/// <summary>
+	/// Helper to add 'X' shaped plant geometry to the mesh data lists.
+	/// </summary>
+	private void _AddPlantXGeometry(int x, int y, int z, NodeRegistry.NodeDefinition blockDef,
+		List<Vector3> vertices, List<Vector3> normals, List<Vector2> uvs, List<int> indices, ref int vertexIndex){
+		// Center of the block
+		Vector3 blockCenter = new Vector3(x + 0.5f, y + 0.5f, z + 0.5f);
+		// Vector3 blockOffset = new Vector3(x, y, z); // Not directly used here, blockCenter handles positioning
+
+		// Quad 1: Rotated 45 degrees around Y
+		// Vertices relative to block center (scaled to fit block)
+		Vector3[] quad1Vertices = new Vector3[]{
+			new Vector3(-0.353f, -0.5f, -0.353f), // Bottom-left
+			new Vector3(0.353f, -0.5f, 0.353f), // Bottom-right
+			new Vector3(0.353f, 0.5f, 0.353f), // Top-right
+			new Vector3(-0.353f, 0.5f, -0.353f) // Top-left
+		};
+		// Normals for quad 1 (facing +X+Z)
+		Vector3 quad1Normal = new Vector3(1, 0, 1).Normalized();
+
+		// Quad 2: Rotated -45 degrees around Y
+		// Vertices relative to block center (scaled to fit block)
+		Vector3[] quad2Vertices = new Vector3[]{
+			new Vector3(-0.353f, -0.5f, 0.353f), // Bottom-left
+			new Vector3(0.353f, -0.5f, -0.353f), // Bottom-right
+			new Vector3(0.353f, 0.5f, -0.353f), // Top-right
+			new Vector3(-0.353f, 0.5f, 0.353f) // Top-left
+		};
+		// Normals for quad 2 (facing +X-Z)
+		Vector3 quad2Normal = new Vector3(1, 0, -1).Normalized();
+
+		// Base UVs for a square face (bottom-left, bottom-right, top-right, top-left)
+		Vector2[] baseUVs ={
+			new Vector2(0, 1), new Vector2(1, 1), new Vector2(1, 0), new Vector2(0, 0)
+		};
+
+		string texturePath = "";
+		if (blockDef.TexturePaths.Length > 0){
+			texturePath = blockDef.TexturePaths[0]; // Plants typically use one texture for all quads
+		}
+
+		if (string.IsNullOrEmpty(texturePath) || !_textureUVRects.ContainsKey(texturePath)){
+			GD.PrintErr($"Missing texture or UV rect for path: {texturePath} for plant '{blockDef.Name}'. Skipping.");
+			return;
+		}
+
+		Rect2 uvRect = _textureUVRects[texturePath];
+
+		// Add Quad 1 (front and back faces)
+		for (int i = 0; i < 4; i++){
+			vertices.Add(quad1Vertices[i] + blockCenter);
+			normals.Add(quad1Normal);
+			uvs.Add(new Vector2(uvRect.Position.X + baseUVs[i].X * uvRect.Size.X,
+				uvRect.Position.Y + baseUVs[i].Y * uvRect.Size.Y));
+		}
+
+		indices.Add(vertexIndex + 0);
+		indices.Add(vertexIndex + 1);
+		indices.Add(vertexIndex + 2);
+		indices.Add(vertexIndex + 0);
+		indices.Add(vertexIndex + 2);
+		indices.Add(vertexIndex + 3);
+		vertexIndex += 4;
+
+		// Add Quad 1 (back face - reversed normal)
+		for (int i = 0; i < 4; i++){
+			vertices.Add(quad1Vertices[3 - i] + blockCenter); // Reverse order for back face
+			normals.Add(-quad1Normal);
+			uvs.Add(new Vector2(uvRect.Position.X + baseUVs[3 - i].X * uvRect.Size.X,
+				uvRect.Position.Y + baseUVs[3 - i].Y * uvRect.Size.Y));
+		}
+
+		indices.Add(vertexIndex + 0);
+		indices.Add(vertexIndex + 1);
+		indices.Add(vertexIndex + 2);
+		indices.Add(vertexIndex + 0);
+		indices.Add(vertexIndex + 2);
+		indices.Add(vertexIndex + 3);
+		vertexIndex += 4;
+
+		// Add Quad 2 (front and back faces)
+		for (int i = 0; i < 4; i++){
+			vertices.Add(quad2Vertices[i] + blockCenter);
+			normals.Add(quad2Normal);
+			uvs.Add(new Vector2(uvRect.Position.X + baseUVs[i].X * uvRect.Size.X,
+				uvRect.Position.Y + baseUVs[i].Y * uvRect.Size.Y));
+		}
+
+		indices.Add(vertexIndex + 0);
+		indices.Add(vertexIndex + 1);
+		indices.Add(vertexIndex + 2);
+		indices.Add(vertexIndex + 0);
+		indices.Add(vertexIndex + 2);
+		indices.Add(vertexIndex + 3);
+		vertexIndex += 4;
+
+		// Add Quad 2 (back face - reversed normal)
+		for (int i = 0; i < 4; i++){
+			vertices.Add(quad2Vertices[3 - i] + blockCenter); // Reverse order for back face
+			normals.Add(-quad2Normal);
+			uvs.Add(new Vector2(uvRect.Position.X + baseUVs[3 - i].X * uvRect.Size.X,
+				uvRect.Position.Y + baseUVs[3 - i].Y * uvRect.Size.Y));
+		}
+
+		indices.Add(vertexIndex + 0);
+		indices.Add(vertexIndex + 1);
+		indices.Add(vertexIndex + 2);
+		indices.Add(vertexIndex + 0);
+		indices.Add(vertexIndex + 2);
+		indices.Add(vertexIndex + 3);
+		vertexIndex += 4;
+	}
+
+	/// <summary>
+	/// Helper to add '*' shaped plant geometry to the mesh data lists.
+	/// </summary>
+	private void _AddPlantStarGeometry(int x, int y, int z, NodeRegistry.NodeDefinition blockDef,
+		List<Vector3> vertices, List<Vector3> normals, List<Vector2> uvs, List<int> indices, ref int vertexIndex){
+		Vector3 blockCenter = new Vector3(x + 0.5f, y + 0.5f, z + 0.5f);
+		float halfSize = 0.5f; // Half the size of the block for vertex positioning
+
+		// Base UVs for a square face
+		Vector2[] baseUVs ={
+			new Vector2(0, 1), new Vector2(1, 1), new Vector2(1, 0), new Vector2(0, 0)
+		};
+
+		string texturePath = "";
+		if (blockDef.TexturePaths.Length > 0){
+			texturePath = blockDef.TexturePaths[0];
+		}
+
+		if (string.IsNullOrEmpty(texturePath) || !_textureUVRects.ContainsKey(texturePath)){
+			GD.PrintErr($"Missing texture or UV rect for path: {texturePath} for plant '{blockDef.Name}'. Skipping.");
+			return;
+		}
+
+		Rect2 uvRect = _textureUVRects[texturePath];
+
+		// Generate 3 quads rotated by 0, 60, and 120 degrees around Y axis
+		for (int i = 0; i < 3; i++){
+			float angle = Mathf.DegToRad(i * 60); // Rotate by 0, 60, 120 degrees
+			Basis rotation = new Basis(Vector3.Up, angle);
+
+			// Vertices for a quad facing +Z, centered at (0,0,0), then rotated
+			Vector3[] quadVertices = new Vector3[]{
+				rotation * new Vector3(-halfSize, -halfSize, 0), // Bottom-left
+				rotation * new Vector3(halfSize, -halfSize, 0), // Bottom-right
+				rotation * new Vector3(halfSize, halfSize, 0), // Top-right
+				rotation * new Vector3(-halfSize, halfSize, 0) // Top-left
+			};
+
+			// Normal for this quad (initially facing +Z, then rotated)
+			Vector3 quadNormal = rotation * Vector3.Forward.Normalized(); // Use multiplication for transformation
+
+			// Add front face
+			for (int j = 0; j < 4; j++){
+				vertices.Add(quadVertices[j] + blockCenter);
+				normals.Add(quadNormal);
+				uvs.Add(new Vector2(uvRect.Position.X + baseUVs[j].X * uvRect.Size.X,
+					uvRect.Position.Y + baseUVs[j].Y * uvRect.Size.Y));
+			}
+
+			indices.Add(vertexIndex + 0);
+			indices.Add(vertexIndex + 1);
+			indices.Add(vertexIndex + 2);
+			indices.Add(vertexIndex + 0);
+			indices.Add(vertexIndex + 2);
+			indices.Add(vertexIndex + 3);
+			vertexIndex += 4;
+
+			// Add back face (reversed order and normal)
+			for (int j = 0; j < 4; j++){
+				vertices.Add(quadVertices[3 - j] + blockCenter);
+				normals.Add(-quadNormal);
+				uvs.Add(new Vector2(uvRect.Position.X + baseUVs[3 - j].X * uvRect.Size.X,
+					uvRect.Position.Y + baseUVs[3 - j].Y * uvRect.Size.Y));
+			}
+
+			indices.Add(vertexIndex + 0);
+			indices.Add(vertexIndex + 1);
+			indices.Add(vertexIndex + 2);
+			indices.Add(vertexIndex + 0);
+			indices.Add(vertexIndex + 2);
+			indices.Add(vertexIndex + 3);
+			vertexIndex += 4;
+		}
+	}
+
+	/// <summary>
+	/// Helper to add 'MC Box' shaped plant geometry (single central quad facing +Z) to the mesh data lists.
+	/// </summary>
+	private void _AddPlantMCBoxGeometry(int x, int y, int z, NodeRegistry.NodeDefinition blockDef,
+		List<Vector3> vertices, List<Vector3> normals, List<Vector2> uvs, List<int> indices, ref int vertexIndex){
+		Vector3 blockCenter = new Vector3(x + 0.5f, y + 0.5f, z + 0.5f);
+		float halfSize = 0.5f; // Half the size of the block for vertex positioning
+
+		// Vertices for a single quad facing +Z, centered at (0,0,0)
+		Vector3[] quadVertices = new Vector3[]{
+			new Vector3(-halfSize, -halfSize, 0), // Bottom-left
+			new Vector3(halfSize, -halfSize, 0), // Bottom-right
+			new Vector3(halfSize, halfSize, 0), // Top-right
+			new Vector3(-halfSize, halfSize, 0) // Top-left
+		};
+		// Normal for this quad (facing +Z)
+		Vector3 quadNormal = Vector3.Forward;
+
+		// Base UVs for a square face
+		Vector2[] baseUVs ={
+			new Vector2(0, 1), new Vector2(1, 1), new Vector2(1, 0), new Vector2(0, 0)
+		};
+
+		string texturePath = "";
+		if (blockDef.TexturePaths.Length > 0){
+			texturePath = blockDef.TexturePaths[0]; // Plants typically use one texture
+		}
+
+		if (string.IsNullOrEmpty(texturePath) || !_textureUVRects.ContainsKey(texturePath)){
+			GD.PrintErr($"Missing texture or UV rect for path: {texturePath} for plant '{blockDef.Name}'. Skipping.");
+			return;
+		}
+
+		Rect2 uvRect = _textureUVRects[texturePath];
+
+		// Add front face
+		for (int i = 0; i < 4; i++){
+			vertices.Add(quadVertices[i] + blockCenter);
+			normals.Add(quadNormal);
+			uvs.Add(new Vector2(uvRect.Position.X + baseUVs[i].X * uvRect.Size.X,
+				uvRect.Position.Y + baseUVs[i].Y * uvRect.Size.Y));
+		}
+
+		indices.Add(vertexIndex + 0);
+		indices.Add(vertexIndex + 1);
+		indices.Add(vertexIndex + 2);
+		indices.Add(vertexIndex + 0);
+		indices.Add(vertexIndex + 2);
+		indices.Add(vertexIndex + 3);
+		vertexIndex += 4;
+
+		// Add back face (reversed order and normal)
+		for (int i = 0; i < 4; i++){
+			vertices.Add(quadVertices[3 - i] + blockCenter);
+			normals.Add(-quadNormal);
+			uvs.Add(new Vector2(uvRect.Position.X + baseUVs[3 - i].X * uvRect.Size.X,
+				uvRect.Position.Y + baseUVs[3 - i].Y * uvRect.Size.Y));
+		}
+
+		indices.Add(vertexIndex + 0);
+		indices.Add(vertexIndex + 1);
+		indices.Add(vertexIndex + 2);
+		indices.Add(vertexIndex + 0);
+		indices.Add(vertexIndex + 2);
+		indices.Add(vertexIndex + 3);
+		vertexIndex += 4;
+	}
+
 
 	// --- Chunk Loading/Unloading/Updating ---
 

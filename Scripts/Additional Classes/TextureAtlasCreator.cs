@@ -1,5 +1,6 @@
 using System;
 using Godot;
+using System.Collections.Generic; // Added for Dictionary
 
 #region License / Copyright
 
@@ -168,32 +169,50 @@ public static class ImageManipulation{
 		return ImageTexture.CreateFromImage(tex);
 	}
 
-	public static Texture2D CreateTextureAtlas(string[] ImagePaths){
-		// Load the six textures
-		ImageTexture[] textures = LoadTextures(ImagePaths);
-		if (textures == null){
-			Logging.Log("error", "Failed to make Atlas Texture from given texture files.");
-			return new AtlasTexture();
+	public struct TextureAtlasResult{
+		public ImageTexture AtlasTexture;
+		public Dictionary<string, Rect2> UVRects;
+	}
+
+	public static TextureAtlasResult CreateTextureAtlas(string[] imagePaths){
+		Dictionary<string, Rect2> uvRects = new Dictionary<string, Rect2>();
+		TextureAtlasResult result = new TextureAtlasResult{ UVRects = uvRects };
+
+		List<Image> images = LoadImages(imagePaths); // Use the new helper
+		if (images == null || images.Count == 0){
+			Logging.Log("error", "Failed to load images for atlas creation.");
+			result.AtlasTexture = new ImageTexture(); // Return empty texture
+			return result;
 		}
 
-		// Calculate the size of the texture atlas based on individual texture sizes
-		int atlasWidth = textures.Length * textures[0].GetWidth();
-		int atlasHeight = textures[0].GetHeight();
-
-		// Resize the atlas image
-		Image atlasImage = Image.Create(atlasWidth, atlasHeight, false, Image.Format.Rgba8);
-
-		// Copy individual textures to the atlas
-		for (int i = 0; i < textures.Length; i++){
-			//TODO: Add in code for knowing which image is what. 
-			ImageTexture texture = textures[i];
-			Image textureImage = texture.GetImage();
-			atlasImage.BlitRect(textureImage,
-				new Rect2I(i * texture.GetWidth(), 0, texture.GetWidth(), texture.GetHeight()), Vector2I.Zero);
+		int atlasWidth = 0;
+		int maxHeight = 0;
+		// Calculate total width and max height
+		// All images are now standardized to 32x32, so this simplifies
+		if (images.Count > 0){
+			atlasWidth = images.Count * 32; // N * 32
+			maxHeight = 32; // All are 32 high
 		}
 
-		// Create and Return a new texture for the atlas
-		return ImageTexture.CreateFromImage(atlasImage);
+
+		Image atlasImage = Image.Create(atlasWidth, maxHeight, false, Image.Format.Rgba8);
+		int currentX = 0;
+		for (int i = 0; i < images.Count; i++){
+			Image img = images[i];
+			atlasImage.BlitRect(img, new Rect2I(0, 0, img.GetWidth(), img.GetHeight()), new Vector2I(currentX, 0));
+
+			// Store UV rect for this texture
+			uvRects[imagePaths[i]] = new Rect2(
+				(float)currentX / atlasWidth,
+				0,
+				(float)img.GetWidth() / atlasWidth,
+				(float)img.GetHeight() / maxHeight
+			);
+			currentX += img.GetWidth();
+		}
+
+		result.AtlasTexture = ImageTexture.CreateFromImage(atlasImage);
+		return result;
 	}
 
 	public static Texture2D CropImage(Image Source, int Height, int Width){
@@ -221,28 +240,28 @@ public static class ImageManipulation{
 		return ImageTexture.CreateFromImage(tex);
 	}
 
-	private static ImageTexture[] LoadTextures(string[] Paths){
-		ImageTexture[] textures = new ImageTexture[Paths.Length];
-
-		for (int i = 0; i < Paths.Length; i++){
-			textures[i] = new ImageTexture();
+	// Modified helper to load Images directly and resize them to 32x32
+	private static List<Image> LoadImages(string[] paths){
+		List<Image> loadedImages = new List<Image>();
+		foreach (string path in paths){
 			Image tex;
-
-			// Load each texture
 			try{
-				tex = Image.LoadFromFile(Paths[i]);
+				tex = Image.LoadFromFile(path);
+				if (tex.GetWidth() != 32 || tex.GetHeight() != 32){
+					tex.Resize(32, 32, Image.Interpolation.Nearest); // Resize to 32x32 using nearest-neighbor interpolation
+					GD.Print($"Resized texture '{path}' to 32x32.");
+				}
+
+				loadedImages.Add(tex);
 			}
 			catch (Exception error){
-				// Handle loading error, e.g., print a message
-				Logging.Log("error", $"Error loading texture: {Paths[i]}.\nError message: {error.Message}");
-				return null;
+				Logging.Log("error", $"Error loading texture: {path}.\nError message: {error.Message}");
+				// Decide how to handle: return null, add a placeholder, or skip
+				// For now, we'll skip and log an error.
 			}
-
-			// Assign the image to the texture.
-			textures[i] = ImageTexture.CreateFromImage(tex);
 		}
 
-		return textures;
+		return loadedImages;
 	}
 
 	public static Texture2D MakeTransparent(Image Source, Color SrcColor){
