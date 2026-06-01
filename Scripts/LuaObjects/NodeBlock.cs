@@ -18,7 +18,7 @@ using Godot;
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU General Public License as more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
@@ -48,6 +48,7 @@ public partial class NodeBlock : Item {
 	public bool   climbable           = false; //  -- If true, can be climbed on like a ladder
 	public bool   buildable_to        = false; // Is this node replaceable, when another node is placed?
 	public string drawtype            = "normal";
+	public string[] Tiles             = System.Array.Empty<string>(); // Textures of node; +Y, -Y, +X, -X, +Z, -Z
 
 	// Function References.
 	public LuaFunctionRef on_construct;
@@ -131,6 +132,9 @@ public partial class NodeBlock : Item {
 		sb.AppendLine(buildable_to.ToString());
 		sb.Append("drawtype: ");
 		sb.AppendLine(drawtype.ToString());
+		sb.Append("Tiles: ");
+		sb.AppendLine(string.Join(", ", Tiles));
+
 
 		sb.Append("[callback-function]on_construct: ");
 		if (on_construct == null)

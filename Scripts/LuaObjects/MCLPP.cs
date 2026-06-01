@@ -55,6 +55,10 @@ public partial class MCLPP : RefCounted {
 	public Godot.Collections.Dictionary<string, Variant>
 		registered_tools = new(); // TODO: Change this once Tools are made.
 
+	// --- New: Reference to the TerrainGenerator ---
+	public TerrainGenerator TerrainGeneratorInstance { get; set; }
+	// ---------------------------------------------
+
 	public bool log(string text) {
 		Logging.Log(text);
 		return true;
@@ -540,6 +544,7 @@ public partial class MCLPP : RefCounted {
 
 		// add to dictionary.
 		registered_nodes.Add(node_name, NewNode);
+		log("Node Registered Successfully:\n", NewNode.ToString());  // test for verifying NodeBlock Changes.
 	}
 
 	public void register_craftitem(string item_name, Variant ItemDefinition) {
@@ -672,8 +677,8 @@ public partial class MCLPP : RefCounted {
 		NodeBlock nodeBlock = new NodeBlock(NodeName);
 		Godot.Collections.Dictionary<string, Variant> Nodedef = (Godot.Collections.Dictionary<string, Variant>) NodeDef;
 
-		if (Nodedef.TryGetValue("node_box", out var value)) {
-			var _nodebox = (Godot.Collections.Dictionary<string, Variant>) value;
+		if (Nodedef.TryGetValue("node_box", out var nvalue)) {
+			var _nodebox = (Godot.Collections.Dictionary<string, Variant>) nvalue;
 
 			BlockBox nodeBox = ProcessBox(NodeName, _nodebox);
 
@@ -684,8 +689,8 @@ public partial class MCLPP : RefCounted {
 			nodeBlock.node_box = nodeBox;
 		}
 
-		if (Nodedef.TryGetValue("collision_box", out value)) {
-			var collBox = (Godot.Collections.Dictionary<string, Variant>) value;
+		if (Nodedef.TryGetValue("collision_box", out var cvalue)) {
+			var collBox = (Godot.Collections.Dictionary<string, Variant>) cvalue;
 
 			BlockBox collisionBox = ProcessBox(NodeName, collBox);
 
@@ -700,8 +705,8 @@ public partial class MCLPP : RefCounted {
 			}
 		}
 
-		if (Nodedef.TryGetValue("selection_box", out value)) {
-			var _selectionbox = (Godot.Collections.Dictionary<string, Variant>) value;
+		if (Nodedef.TryGetValue("selection_box", out var svalue)) {
+			var _selectionbox = (Godot.Collections.Dictionary<string, Variant>) svalue;
 
 			BlockBox selectionBox = ProcessBox(NodeName, _selectionbox);
 
@@ -716,7 +721,7 @@ public partial class MCLPP : RefCounted {
 			}
 		}
 
-		if (Nodedef.TryGetValue("after_destruct", out value)) {
+		if (Nodedef.TryGetValue("after_destruct", out var value)) {
 			nodeBlock.after_destruct = (LuaFunctionRef) value;
 		}
 
@@ -986,6 +991,43 @@ public partial class MCLPP : RefCounted {
 
 	public void get_translator(string modname) {
 	}
+
+	/// <summary>
+	/// Retrieves the NodeBlock definition at the specified world coordinates.
+	/// This method is intended to be called from Lua.
+	/// </summary>
+	/// <param name="x">World X coordinate.</param>
+	/// <param name="y">World Y coordinate.</param>
+	/// <param name="z">World Z coordinate.</param>
+	/// <returns>The NodeBlock object at the given coordinates, or null if no TerrainGenerator is set or block is not found.</returns>
+	public NodeBlock get_node(int x, int y, int z)
+	{
+		if (TerrainGeneratorInstance == null)
+		{
+			log("error", "MCLPP.TerrainGeneratorInstance is not set. Cannot get node data.");
+			return null;
+		}
+
+		Vector3I worldPos = new Vector3I(x, y, z);
+		int blockId = TerrainGeneratorInstance.GetBlockId(worldPos);
+		
+		// Access NodeRegistry directly from TerrainGeneratorInstance
+		NodeRegistry nodeRegistry = TerrainGeneratorInstance.NodeRegistry;
+		if (nodeRegistry == null)
+		{
+			log("error", "TerrainGeneratorInstance.NodeRegistry is null. Cannot get node data.");
+			return null;
+		}
+
+		NodeRegistry.NodeDefinition nodeDef = nodeRegistry.GetNodeDefinition(blockId);
+		if (nodeDef != null)
+		{
+			return nodeDef.OriginalNodeBlock;
+		}
+		
+		return null; // Block not found or is air
+	}
+
 
 	internal IEnumerator ABMCoRoutine(Array<Variant> _params) {
 		var rng = new Random(DateTime.UtcNow.Millisecond);
