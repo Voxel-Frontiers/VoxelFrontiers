@@ -55,6 +55,10 @@ public partial class MCLPP : RefCounted {
 	public Godot.Collections.Dictionary<string, Variant>
 		registered_tools = new(); // TODO: Change this once Tools are made.
 
+	// --- New: Reference to the TerrainGenerator ---
+	public TerrainGenerator TerrainGeneratorInstance { get; set; }
+	// ---------------------------------------------
+
 	public bool log(string text) {
 		Logging.Log(text);
 		return true;
@@ -674,6 +678,149 @@ public partial class MCLPP : RefCounted {
 		NodeBlock nodeBlock = new NodeBlock(NodeName);
 		Godot.Collections.Dictionary<string, Variant> Nodedef = (Godot.Collections.Dictionary<string, Variant>) NodeDef;
 
+		if (Nodedef.TryGetValue("node_box", out var nvalue)) {
+			var _nodebox = (Godot.Collections.Dictionary<string, Variant>) nvalue;
+
+			BlockBox nodeBox = ProcessBox(NodeName, _nodebox);
+
+			if (nodeBox == null) {
+				return null;
+			}
+
+			nodeBlock.node_box = nodeBox;
+		}
+
+		if (Nodedef.TryGetValue("collision_box", out var cvalue)) {
+			var collBox = (Godot.Collections.Dictionary<string, Variant>) cvalue;
+
+			BlockBox collisionBox = ProcessBox(NodeName, collBox);
+
+			if (collisionBox == null) {
+				return null;
+			}
+
+			nodeBlock.collision_box = collisionBox;
+		} else {
+			if (nodeBlock.node_box != null) {
+				nodeBlock.collision_box = nodeBlock.node_box;
+			}
+		}
+
+		if (Nodedef.TryGetValue("selection_box", out var svalue)) {
+			var _selectionbox = (Godot.Collections.Dictionary<string, Variant>) svalue;
+
+			BlockBox selectionBox = ProcessBox(NodeName, _selectionbox);
+
+			if (selectionBox == null) {
+				return null;
+			}
+
+			nodeBlock.selection_box = selectionBox;
+		} else {
+			if (nodeBlock.collision_box != null) {
+				nodeBlock.selection_box = nodeBlock.collision_box;
+			}
+		}
+
+		if (Nodedef.TryGetValue("after_destruct", out var value)) {
+			nodeBlock.after_destruct = (LuaFunctionRef) value;
+		}
+
+		if (Nodedef.TryGetValue("after_dig_node", out value)) {
+			nodeBlock.after_dig_node = (LuaFunctionRef) value;
+		}
+
+		if (Nodedef.TryGetValue("after_place_node", out value)) {
+			nodeBlock.after_place_node = (LuaFunctionRef) value;
+		}
+
+		if (Nodedef.TryGetValue("after_use", out value)) {
+			nodeBlock.after_use = (LuaFunctionRef) value;
+		}
+
+		if (Nodedef.TryGetValue("allow_metadata_inventory_move", out value)) {
+			nodeBlock.allow_metadata_inventory_move = (LuaFunctionRef) value;
+		}
+
+		if (Nodedef.TryGetValue("allow_metadata_inventory_put", out value)) {
+			nodeBlock.allow_metadata_inventory_put = (LuaFunctionRef) value;
+		}
+
+		if (Nodedef.TryGetValue("allow_metadata_inventory_move", out value)) {
+			nodeBlock.allow_metadata_inventory_move = (LuaFunctionRef) value;
+		}
+
+		if (Nodedef.TryGetValue("allow_metadata_inventory_take", out value)) {
+			nodeBlock.allow_metadata_inventory_take = (LuaFunctionRef) value;
+		}
+
+		if (Nodedef.TryGetValue("buildable_to", out value)) {
+			nodeBlock.buildable_to = (bool) value;
+		}
+
+		if (Nodedef.TryGetValue("can_dig", out value)) {
+			nodeBlock.can_dig = (LuaFunctionRef) value;
+		}
+
+		if (Nodedef.TryGetValue("climbable", out value)) {
+			nodeBlock.climbable = (bool) value;
+		}
+
+		if (Nodedef.TryGetValue("color", out value)) {
+			nodeBlock.color = (string) value;
+		}
+
+		if (Nodedef.TryGetValue("description", out value)) {
+			nodeBlock.description = (string) value;
+		}
+
+		if (Nodedef.TryGetValue("diggable", out value)) {
+			nodeBlock.diggable = (bool) value;
+		}
+
+		if (Nodedef.TryGetValue("drawtype", out value)) {
+			nodeBlock.drawtype = (string) value;
+		}
+
+		if (Nodedef.TryGetValue("floodable", out value)) {
+			nodeBlock.floodable = (bool) value;
+		}
+
+		if (Nodedef.TryGetValue("groups", out value)) {
+			nodeBlock.groups = (Godot.Collections.Dictionary<string, int>) value;
+		}
+
+		if (Nodedef.TryGetValue("inventory_image", out value)) {
+			nodeBlock.inventory_image = (string) value;
+		}
+
+		if (Nodedef.TryGetValue("inventory_overlay", out value)) {
+			nodeBlock.inventory_overlay = (string) value;
+		}
+
+		if (Nodedef.TryGetValue("is_ground_content", out value)) {
+			nodeBlock.is_ground_content = (bool) value;
+		}
+
+		if (Nodedef.TryGetValue("light_source", out value)) {
+			nodeBlock.light_source = (int) value;
+		}
+
+		if (Nodedef.TryGetValue("liquidtype", out value)) {
+			nodeBlock.liquidtype = (string) value;
+		}
+
+		if (Nodedef.TryGetValue("liquids_pointable", out value)) {
+			nodeBlock.liquids_pointable = (bool) value;
+		}
+
+		if (Nodedef.TryGetValue("liquid_alternative_flowing", out value)) {
+			nodeBlock.liquid_alternative_flowing = (string) value;
+		}
+
+		if (Nodedef.TryGetValue("liquid_alternative_source", out value)) {
+			nodeBlock.liquid_alternative_source = (string) value;
+		}
 		ProcessProperty(Nodedef, "node_box", value => ProcessBox(NodeName, (Godot.Collections.Dictionary<string, Variant>) value), box => nodeBlock.node_box = box);
 		ProcessProperty(Nodedef, "collision_box", value => ProcessBox(NodeName, (Godot.Collections.Dictionary<string, Variant>) value), box => nodeBlock.collision_box = box);
 		ProcessProperty(Nodedef, "selection_box", value => ProcessBox(NodeName, (Godot.Collections.Dictionary<string, Variant>) value), box => nodeBlock.selection_box = box);
@@ -767,6 +914,43 @@ public partial class MCLPP : RefCounted {
 
 	public void get_translator(string modname) {
 	}
+
+	/// <summary>
+	/// Retrieves the NodeBlock definition at the specified world coordinates.
+	/// This method is intended to be called from Lua.
+	/// </summary>
+	/// <param name="x">World X coordinate.</param>
+	/// <param name="y">World Y coordinate.</param>
+	/// <param name="z">World Z coordinate.</param>
+	/// <returns>The NodeBlock object at the given coordinates, or null if no TerrainGenerator is set or block is not found.</returns>
+	public NodeBlock get_node(int x, int y, int z)
+	{
+		if (TerrainGeneratorInstance == null)
+		{
+			log("error", "MCLPP.TerrainGeneratorInstance is not set. Cannot get node data.");
+			return null;
+		}
+
+		Vector3I worldPos = new Vector3I(x, y, z);
+		int blockId = TerrainGeneratorInstance.GetBlockId(worldPos);
+		
+		// Access NodeRegistry directly from TerrainGeneratorInstance
+		NodeRegistry nodeRegistry = TerrainGeneratorInstance.NodeRegistry;
+		if (nodeRegistry == null)
+		{
+			log("error", "TerrainGeneratorInstance.NodeRegistry is null. Cannot get node data.");
+			return null;
+		}
+
+		NodeRegistry.NodeDefinition nodeDef = nodeRegistry.GetNodeDefinition(blockId);
+		if (nodeDef != null)
+		{
+			return nodeDef.OriginalNodeBlock;
+		}
+		
+		return null; // Block not found or is air
+	}
+
 
 	internal IEnumerator ABMCoRoutine(Array<Variant> _params) {
 		var rng = new Random(DateTime.UtcNow.Millisecond);
