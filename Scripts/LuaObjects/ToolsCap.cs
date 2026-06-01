@@ -60,7 +60,7 @@ public struct GroupCap {
 }
 
 public partial class ToolsCap : RefCounted {
-	/*
+	/* from Luanti.
 	tool_capabilities = {
 		full_punch_interval = 1.0,
 		max_drop_level = 0,
@@ -76,12 +76,10 @@ public partial class ToolsCap : RefCounted {
 		-- by punching them (0 = infinite uses).
 			-- For compatibility, this is automatically set from the first
 			-- suitable groupcap using the formula "uses * 3^(maxlevel - 1)".
-			-- It is recommend to set this explicitly instead of relying on the
+			-- It is recommended to set this explicitly instead of relying on the
 		-- fallback behavior.
 	},
 	*/
-
-	// TODO: Finish this. 
 
 	public double                                    full_punch_interval = 1.0d;
 	public int                                       max_drop_level = 0;
