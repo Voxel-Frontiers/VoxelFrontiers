@@ -1,2 +1,7 @@
 /.idea/
 /.godot/
+.vscode
+.godot
+Models/*.png
+Models/*.import
+CHANGELOGS.md

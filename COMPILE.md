@@ -5,10 +5,10 @@ Godot Lua API DotNet Notes
 * [Godot Lua API DotNet Notes](#godot-lua-api-dotnet-notes)
   * [Prerequisites](#prerequisites)
   * [Introduction](#introduction)
-      * [Helpful places:](#helpful-places)
+	  * [Helpful places:](#helpful-places)
   * [Commands](#commands)
-      * [Method 1](#method-1)
-      * [Method 2](#method-2)
+	  * [Method 1](#method-1)
+	  * [Method 2](#method-2)
   * [Troubleshooting](#troubleshooting)
 <!-- TOC -->
 
@@ -110,7 +110,7 @@ part of your team. (Like an open source project, or if they are compiling the co
 <?xml version="1.0" encoding="utf-8"?>
 <configuration>
   <packageSources>
-    <add key="LuaAPINugetSource" value="/path/to/editor/editor-mono/nuget_packages" />
+	<add key="LuaAPINugetSource" value="/path/to/editor/editor-mono/nuget_packages" />
   </packageSources>
 </configuration>
 ```

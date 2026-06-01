@@ -52,6 +52,9 @@ Examples of unacceptable behavior include:
   professional setting.
 * Any attacks upon a parson or group based upon their genetic heritage, or status. 
   Examples include, but are not limited to, their skin color, their sexual orientation, etc.
+* Any kind of racism. I should never have had to say this -- but some people just cannot be
+  decent human beings, so here we are... Racism/Racist remarks will get you immediately banned
+  and your issues closed and ignored. This will have no appeal stage, and will not be undone. PERIOD.
 
 We recognize that people are passionate about the projects that they care about. 
 

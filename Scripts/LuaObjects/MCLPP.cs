@@ -544,6 +544,7 @@ public partial class MCLPP : RefCounted {
 
 		// add to dictionary.
 		registered_nodes.Add(node_name, NewNode);
+
 		log("Node Registered Successfully:\n", NewNode.ToString());  // test for verifying NodeBlock Changes.
 	}
 
@@ -820,166 +821,88 @@ public partial class MCLPP : RefCounted {
 		if (Nodedef.TryGetValue("liquid_alternative_source", out value)) {
 			nodeBlock.liquid_alternative_source = (string) value;
 		}
+		ProcessProperty(Nodedef, "node_box", value => ProcessBox(NodeName, (Godot.Collections.Dictionary<string, Variant>) value), box => nodeBlock.node_box = box);
+		ProcessProperty(Nodedef, "collision_box", value => ProcessBox(NodeName, (Godot.Collections.Dictionary<string, Variant>) value), box => nodeBlock.collision_box = box);
+		ProcessProperty(Nodedef, "selection_box", value => ProcessBox(NodeName, (Godot.Collections.Dictionary<string, Variant>) value), box => nodeBlock.selection_box = box);
+		ProcessProperty(Nodedef, "after_destruct", value => (LuaFunctionRef) value, refValue => nodeBlock.after_destruct = refValue);
+		ProcessProperty(Nodedef, "after_dig_node", value => (LuaFunctionRef) value, refValue => nodeBlock.after_dig_node = refValue);
+		ProcessProperty(Nodedef, "after_place_node", value => (LuaFunctionRef) value, refValue => nodeBlock.after_place_node = refValue);
+		ProcessProperty(Nodedef, "after_use", value => (LuaFunctionRef) value, refValue => nodeBlock.after_use = refValue);
+		ProcessProperty(Nodedef, "allow_metadata_inventory_move", value => (LuaFunctionRef) value, refValue => nodeBlock.allow_metadata_inventory_move = refValue);
+		ProcessProperty(Nodedef, "allow_metadata_inventory_put", value => (LuaFunctionRef) value, refValue => nodeBlock.allow_metadata_inventory_put = refValue);
+		ProcessProperty(Nodedef, "allow_metadata_inventory_take", value => (LuaFunctionRef) value, refValue => nodeBlock.allow_metadata_inventory_take = refValue);
+		ProcessProperty(Nodedef, "buildable_to", value => (bool) value, refValue => nodeBlock.buildable_to = refValue);
+		ProcessProperty(Nodedef, "can_dig", value => (LuaFunctionRef) value, refValue => nodeBlock.can_dig = refValue);
+		ProcessProperty(Nodedef, "climbable", value => (bool) value, refValue => nodeBlock.climbable = refValue);
+		ProcessProperty(Nodedef, "color", value => (string) value, refValue => nodeBlock.color = refValue);
+		ProcessProperty(Nodedef, "description", value => (string) value, refValue => nodeBlock.description = refValue);
+		ProcessProperty(Nodedef, "diggable", value => (bool) value, refValue => nodeBlock.diggable = refValue);
+		ProcessProperty(Nodedef, "drawtype", value => (string) value, refValue => nodeBlock.drawtype = refValue);
+		ProcessProperty(Nodedef, "floodable", value => (bool) value, refValue => nodeBlock.floodable = refValue);
+		ProcessProperty(Nodedef, "groups", value => (Godot.Collections.Dictionary<string, int>) value, refValue => nodeBlock.groups = refValue);
+		ProcessProperty(Nodedef, "inventory_image", value => (string) value, refValue => nodeBlock.inventory_image = refValue);
+		ProcessProperty(Nodedef, "inventory_overlay", value => (string) value, refValue => nodeBlock.inventory_overlay = refValue);
+		ProcessProperty(Nodedef, "is_ground_content", value => (bool) value, refValue => nodeBlock.is_ground_content = refValue);
+		ProcessProperty(Nodedef, "light_source", value => (int) value, refValue => nodeBlock.light_source = refValue);
+		ProcessProperty(Nodedef, "liquidtype", value => (string) value, refValue => nodeBlock.liquidtype = refValue);
+		ProcessProperty(Nodedef, "liquids_pointable", value => (bool) value, refValue => nodeBlock.liquids_pointable = refValue);
+		ProcessProperty(Nodedef, "liquid_alternative_flowing", value => (string) value, refValue => nodeBlock.liquid_alternative_flowing = refValue);
+		ProcessProperty(Nodedef, "liquid_alternative_source", value => (string) value, refValue => nodeBlock.liquid_alternative_source = refValue);
 #nullable enable
-		if (Nodedef.TryGetValue("move_resistance", out value)) {
-			nodeBlock.move_resistance = (int?) value;
-		}
-
-		if (Nodedef.TryGetValue("node_dig_prediction", out value)) {
-			nodeBlock.node_dig_prediction = (string) value;
-		}
-
-		if (Nodedef.TryGetValue("node_placement_prediction", out value)) {
-			nodeBlock.node_placement_prediction = (string?) value;
-		}
+		ProcessProperty(Nodedef, "move_resistance", value => (int?) value, refValue => nodeBlock.move_resistance = refValue);
+		ProcessProperty(Nodedef, "node_dig_prediction", value => (string) value, refValue => nodeBlock.node_dig_prediction = refValue);
+		ProcessProperty(Nodedef, "node_placement_prediction", value => (string?) value, refValue => nodeBlock.node_placement_prediction = refValue);
 #nullable disable
-
-		if (Nodedef.TryGetValue("on_blast", out value)) {
-			nodeBlock.on_blast = (LuaFunctionRef) value;
-		}
-
-		if (Nodedef.TryGetValue("on_construct", out value)) {
-			nodeBlock.on_construct = (LuaFunctionRef) value;
-		}
-
-		if (Nodedef.TryGetValue("on_destruct", out value)) {
-			nodeBlock.on_destruct = (LuaFunctionRef) value;
-		}
-
-		if (Nodedef.TryGetValue("on_dig", out value)) {
-			nodeBlock.on_dig = (LuaFunctionRef) value;
-		}
-
-		if (Nodedef.TryGetValue("on_drop", out value)) {
-			nodeBlock.on_drop = (LuaFunctionRef) value;
-		}
-
-		if (Nodedef.TryGetValue("on_flood", out value)) {
-			nodeBlock.on_flood = (LuaFunctionRef) value;
-		}
-
-		if (Nodedef.TryGetValue("on_metadata_inventory_move", out value)) {
-			nodeBlock.on_metadata_inventory_move = (LuaFunctionRef) value;
-		}
-
-		if (Nodedef.TryGetValue("on_metadata_inventory_put", out value)) {
-			nodeBlock.on_metadata_inventory_put = (LuaFunctionRef) value;
-		}
-
-		if (Nodedef.TryGetValue("on_metadata_inventory_take", out value)) {
-			nodeBlock.on_metadata_inventory_take = (LuaFunctionRef) value;
-		}
-
-		if (Nodedef.TryGetValue("on_punch", out value)) {
-			nodeBlock.on_punch = (LuaFunctionRef) value;
-		}
-
-		if (Nodedef.TryGetValue("on_receive_fields", out value)) {
-			nodeBlock.on_receive_fields = (LuaFunctionRef) value;
-		}
-
-		if (Nodedef.TryGetValue("on_rightclick", out value)) {
-			nodeBlock.on_rightclick = (LuaFunctionRef) value;
-		}
-
-		if (Nodedef.TryGetValue("on_secondary_use", out value)) {
-			nodeBlock.on_secondary_use = (LuaFunctionRef) value;
-		}
-
-		if (Nodedef.TryGetValue("on_timer", out value)) {
-			nodeBlock.on_timer = (LuaFunctionRef) value;
-		}
-
-		if (Nodedef.TryGetValue("on_use", out value)) {
-			nodeBlock.on_use = (LuaFunctionRef) value;
-		}
-
-		if (Nodedef.TryGetValue("overlay_tiles", out value)) {
-			nodeBlock.overlay_tiles = (string[]) value;
-		}
-
-		if (Nodedef.TryGetValue("paramtype", out value)) {
-			nodeBlock.paramtype = (string) value;
-		}
-
-		if (Nodedef.TryGetValue("paramtype2", out value)) {
-			nodeBlock.paramtype2 = (string) value;
-		}
-
-		if (Nodedef.TryGetValue("place_param2", out value)) {
-			nodeBlock.place_param2 = (int) value;
-		}
-
-		if (Nodedef.TryGetValue("pointable", out value)) {
-			nodeBlock.pointable = (bool) value;
-		}
-
-		if (Nodedef.TryGetValue("post_effect_color", out value)) {
-			nodeBlock.post_effect_color = (string) value;
-		}
-
-		if (Nodedef.TryGetValue("preserve_metadata", out value)) {
-			nodeBlock.preserve_metadata = (LuaFunctionRef) value;
-		}
-
-		if (Nodedef.TryGetValue("short_description", out value)) {
-			nodeBlock.short_description = (string) value;
-		}
-
-		if (Nodedef.TryGetValue("sounds", out value)) {
-			nodeBlock.sounds = (string[]) value;
-		}
-
-		if (Nodedef.TryGetValue("special_tiles", out value)) {
-			nodeBlock.special_tiles = (string[]) value;
-		}
-
-		if (Nodedef.TryGetValue("stack_max", out value)) {
-			nodeBlock.stack_max = (int) value;
-		}
-
-		if (Nodedef.TryGetValue("sunlight_propagates", out value)) {
-			nodeBlock.sunlight_propagates = (bool) value;
-		}
-
-		if (Nodedef.TryGetValue("tiles", out value)) {
-			nodeBlock.tiles = (string[]) value;
-		}
-
-		if (Nodedef.TryGetValue("tool_capabilities", out value)) {
-			nodeBlock.tool_capabilities = (ToolsCap) value;
-		}
-
-		if (Nodedef.TryGetValue("use_texture_alpha", out value)) {
-			nodeBlock.use_texture_alpha = (string) value;
-		}
-
-		if (Nodedef.TryGetValue("user_def", out value)) {
-			nodeBlock.user_def = (Godot.Collections.Dictionary<string, Variant>) value;
-		}
-
-		if (Nodedef.TryGetValue("visual_scale", out value)) {
-			nodeBlock.visual_scale = (float) value;
-		}
-
-		if (Nodedef.TryGetValue("walkable", out value)) {
-			nodeBlock.walkable = (bool) value;
-		}
-
-		if (Nodedef.TryGetValue("wield_image", out value)) {
-			nodeBlock.wield_image = (string) value;
-		}
-
-		if (Nodedef.TryGetValue("wield_scale", out value)) {
-			nodeBlock.wield_scale = (Vector3) value;
-		}
-
-		if (Nodedef.TryGetValue("wield_overlay", out value)) {
-			nodeBlock.wield_overlay = (string) value;
-		}
+		ProcessProperty(Nodedef, "on_blast", value => (LuaFunctionRef) value, refValue => nodeBlock.on_blast = refValue);
+		ProcessProperty(Nodedef, "on_construct", value => (LuaFunctionRef) value, refValue => nodeBlock.on_construct = refValue);
+		ProcessProperty(Nodedef, "on_destruct", value => (LuaFunctionRef) value, refValue => nodeBlock.on_destruct = refValue);
+		ProcessProperty(Nodedef, "on_dig", value => (LuaFunctionRef) value, refValue => nodeBlock.on_dig = refValue);
+		ProcessProperty(Nodedef, "on_drop", value => (LuaFunctionRef) value, refValue => nodeBlock.on_drop = refValue);
+		ProcessProperty(Nodedef, "on_flood", value => (LuaFunctionRef) value, refValue => nodeBlock.on_flood = refValue);
+		ProcessProperty(Nodedef, "on_metadata_inventory_move", value => (LuaFunctionRef) value, refValue => nodeBlock.on_metadata_inventory_move = refValue);
+		ProcessProperty(Nodedef, "on_metadata_inventory_put", value => (LuaFunctionRef) value, refValue => nodeBlock.on_metadata_inventory_put = refValue);
+		ProcessProperty(Nodedef, "on_metadata_inventory_take", value => (LuaFunctionRef) value, refValue => nodeBlock.on_metadata_inventory_take = refValue);
+		ProcessProperty(Nodedef, "on_punch", value => (LuaFunctionRef) value, refValue => nodeBlock.on_punch = refValue);
+		ProcessProperty(Nodedef, "on_receive_fields", value => (LuaFunctionRef) value, refValue => nodeBlock.on_receive_fields = refValue);
+		ProcessProperty(Nodedef, "on_rightclick", value => (LuaFunctionRef) value, refValue => nodeBlock.on_rightclick = refValue);
+		ProcessProperty(Nodedef, "on_secondary_use", value => (LuaFunctionRef) value, refValue => nodeBlock.on_secondary_use = refValue);
+		ProcessProperty(Nodedef, "on_timer", value => (LuaFunctionRef) value, refValue => nodeBlock.on_timer = refValue);
+		ProcessProperty(Nodedef, "on_use", value => (LuaFunctionRef) value, refValue => nodeBlock.on_use = refValue);
+		ProcessProperty(Nodedef, "overlay_tiles", value => (string[]) value, refValue => nodeBlock.overlay_tiles = refValue);
+		ProcessProperty(Nodedef, "paramtype", value => (string) value, refValue => nodeBlock.paramtype = refValue);
+		ProcessProperty(Nodedef, "paramtype2", value => (string) value, refValue => nodeBlock.paramtype2 = refValue);
+		ProcessProperty(Nodedef, "place_param2", value => (int) value, refValue => nodeBlock.place_param2 = refValue);
+		ProcessProperty(Nodedef, "pointable", value => (bool) value, refValue => nodeBlock.pointable = refValue);
+		ProcessProperty(Nodedef, "post_effect_color", value => (string) value, refValue => nodeBlock.post_effect_color = refValue);
+		ProcessProperty(Nodedef, "preserve_metadata", value => (LuaFunctionRef) value, refValue => nodeBlock.preserve_metadata = refValue);
+		ProcessProperty(Nodedef, "short_description", value => (string) value, refValue => nodeBlock.short_description = refValue);
+		ProcessProperty(Nodedef, "sounds", value => (string[]) value, refValue => nodeBlock.sounds = refValue);
+		ProcessProperty(Nodedef, "special_tiles", value => (string[]) value, refValue => nodeBlock.special_tiles = refValue);
+		ProcessProperty(Nodedef, "stack_max", value => (int) value, refValue => nodeBlock.stack_max = refValue);
+		ProcessProperty(Nodedef, "sunlight_propagates", value => (bool) value, refValue => nodeBlock.sunlight_propagates = refValue);
+		ProcessProperty(Nodedef, "tiles", value => (string[]) value, refValue => nodeBlock.tiles = refValue);
+		ProcessProperty(Nodedef, "tool_capabilities", value => (ToolsCap) value, refValue => nodeBlock.tool_capabilities = refValue);
+		ProcessProperty(Nodedef, "use_texture_alpha", value => (string) value, refValue => nodeBlock.use_texture_alpha = refValue);
+		ProcessProperty(Nodedef, "user_def", value => (Godot.Collections.Dictionary<string, Variant>) value, refValue => nodeBlock.user_def = refValue);
+		ProcessProperty(Nodedef, "visual_scale", value => (float) value, refValue => nodeBlock.visual_scale = refValue);
+		ProcessProperty(Nodedef, "walkable", value => (bool) value, refValue => nodeBlock.walkable = refValue);
+		ProcessProperty(Nodedef, "wield_image", value => (string) value, refValue => nodeBlock.wield_image = refValue);
+		ProcessProperty(Nodedef, "wield_scale", value => (Vector3) value, refValue => nodeBlock.wield_scale = refValue);
+		ProcessProperty(Nodedef, "wield_overlay", value => (string) value, refValue => nodeBlock.wield_overlay = refValue);
 
 		nodeBlock.mod_origin = _mod_name;
 		return nodeBlock;
+	}
+
+	private void ProcessProperty<T>(Godot.Collections.Dictionary<string, Variant> Nodedef, string key, Func<Variant, T> processValue, Action<T> assignValue) {
+		if (Nodedef.TryGetValue(key, out var value)) {
+			T processedValue = processValue(value);
+			if (processedValue != null) {
+				assignValue(processedValue);
+			} else {
+				GD.Print($"The processed value for the key '{key}' is null.");
+			}
+		}
 	}
 
 	private Item ProcessItem(string itemName, Variant redefinition) {
