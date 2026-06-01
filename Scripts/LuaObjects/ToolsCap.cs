@@ -29,22 +29,22 @@ using Godot;
 
 namespace ApophisSoftware.LuaObjects;
 
-public struct GroupCap {
-	public string   name     = "";
-	public double[] times    = new[] {0.0d};
-	public int      uses     = 0;
-	public int      maxlevel = 0;
+public struct GroupCap{
+	public string name = "";
+	public double[] times = new[]{ 0.0d };
+	public int uses = 0;
+	public int maxlevel = 0;
 
-	public GroupCap() {
+	public GroupCap(){
 	}
 
-	public override string ToString() {
+	public override string ToString(){
 		StringBuilder sb = new StringBuilder();
 
 		sb.Append(name);
 		sb.Append(" = {");
 		sb.Append("times = {");
-		foreach (double d in times) {
+		foreach (double d in times){
 			sb.Append(d.ToString());
 			sb.Append(", ");
 		}
@@ -59,7 +59,7 @@ public struct GroupCap {
 	}
 }
 
-public partial class ToolsCap : RefCounted {
+public partial class ToolsCap : RefCounted{
 	/* from Luanti.
 	tool_capabilities = {
 		full_punch_interval = 1.0,
@@ -81,19 +81,19 @@ public partial class ToolsCap : RefCounted {
 	},
 	*/
 
-	public double                                    full_punch_interval = 1.0d;
-	public int                                       max_drop_level = 0;
-	public List<GroupCap>                            groupcaps = new();
+	public double full_punch_interval = 1.0d;
+	public int max_drop_level = 0;
+	public List<GroupCap> groupcaps = new();
 	public Godot.Collections.Dictionary<string, int> damage_groups = new Godot.Collections.Dictionary<string, int>();
 
-	public int? punch_attack_uses {
+	public int? punch_attack_uses{
 		get => _punch_attack_uses;
 		set => _punch_attack_uses = value;
 	}
 
 	private int? _punch_attack_uses = null;
 
-	public override string ToString() {
+	public override string ToString(){
 		StringBuilder sb = new StringBuilder();
 		sb.Append("full_punch_interval: ");
 		sb.AppendLine(full_punch_interval.ToString());

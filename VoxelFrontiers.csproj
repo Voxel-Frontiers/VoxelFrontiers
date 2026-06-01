@@ -1,14 +1,14 @@
 <Project Sdk="Godot.NET.Sdk/4.2.1">
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <EnableDynamicLoading>true</EnableDynamicLoading>
-  </PropertyGroup>
-  <ItemGroup>
-    <Content Include="Scripts\LuaObjects\Lua\builtin.lua"/>
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Update="Godot.SourceGenerators" Version="4.6.3" />
-    <PackageReference Update="GodotSharp" Version="4.6.3" />
-    <PackageReference Update="GodotSharpEditor" Version="4.6.3" />
-  </ItemGroup>
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <EnableDynamicLoading>true</EnableDynamicLoading>
+    </PropertyGroup>
+    <ItemGroup>
+        <Content Include="Scripts\LuaObjects\Lua\builtin.lua"/>
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Update="Godot.SourceGenerators" Version="4.6.3"/>
+        <PackageReference Update="GodotSharp" Version="4.6.3"/>
+        <PackageReference Update="GodotSharpEditor" Version="4.6.3"/>
+    </ItemGroup>
 </Project>

@@ -29,26 +29,26 @@ using Godot;
 
 namespace ApophisSoftware.LuaObjects;
 
-public partial class NodeBlock : Item {
-	public BlockBox node_box      = new();
+public partial class NodeBlock : Item{
+	public BlockBox node_box = new();
 	public BlockBox collision_box = new();
 	public BlockBox selection_box = new();
 
-	public string use_texture_alpha   = "opaque";
-	public string post_effect_color   = "#00000000";
-	public int    place_param2        = 0;
-	public string paramtype           = "light";
-	public string paramtype2          = "none";
-	public float  visual_scale        = 1.0f;
-	public bool   is_ground_content   = true;
-	public bool   sunlight_propagates = false;
-	public bool   walkable            = true;  // -- If true, objects collide with node
-	public bool   pointable           = true;  // -- If true, can be pointed at
-	public bool   diggable            = true;  //  -- If false, can never be dug
-	public bool   climbable           = false; //  -- If true, can be climbed on like a ladder
-	public bool   buildable_to        = false; // Is this node replaceable, when another node is placed?
-	public string drawtype            = "normal";
-	public string[] Tiles             = System.Array.Empty<string>(); // Textures of node; +Y, -Y, +X, -X, +Z, -Z
+	public string use_texture_alpha = "opaque";
+	public string post_effect_color = "#00000000";
+	public int place_param2 = 0;
+	public string paramtype = "light";
+	public string paramtype2 = "none";
+	public float visual_scale = 1.0f;
+	public bool is_ground_content = true;
+	public bool sunlight_propagates = false;
+	public bool walkable = true; // -- If true, objects collide with node
+	public bool pointable = true; // -- If true, can be pointed at
+	public bool diggable = true; //  -- If false, can never be dug
+	public bool climbable = false; //  -- If true, can be climbed on like a ladder
+	public bool buildable_to = false; // Is this node replaceable, when another node is placed?
+	public string drawtype = "normal";
+	public string[] Tiles = System.Array.Empty<string>(); // Textures of node; +Y, -Y, +X, -X, +Z, -Z
 
 	// Function References.
 	public LuaFunctionRef on_construct;
@@ -76,18 +76,18 @@ public partial class NodeBlock : Item {
 
 	#region CTOR
 
-	public NodeBlock() : base() {
+	public NodeBlock() : base(){
 	}
 
-	public NodeBlock(string name) : base(name) {
+	public NodeBlock(string name) : base(name){
 		this.name = name;
 	}
 
-	public NodeBlock CreateNodeBlock(LuaTuple args) {
+	public NodeBlock CreateNodeBlock(LuaTuple args){
 		NodeBlock nb = new NodeBlock("unknown");
 
-		if (args != null && !args.IsEmpty()) {
-			nb.name = (string) args.ToArray()[0];
+		if (args != null && !args.IsEmpty()){
+			nb.name = (string)args.ToArray()[0];
 		}
 
 		return nb;
@@ -95,7 +95,7 @@ public partial class NodeBlock : Item {
 
 	#endregion
 
-	public override string ToString() {
+	public override string ToString(){
 		StringBuilder sb = new StringBuilder();
 
 		sb.Append("node_box: ");

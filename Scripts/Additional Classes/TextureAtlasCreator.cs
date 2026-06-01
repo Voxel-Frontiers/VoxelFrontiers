@@ -24,8 +24,8 @@ using Godot;
 
 namespace ApophisSoftware;
 
-public static class ImageManipulation {
-	public static Texture2D AdjustBCS(Image Source, float Brightness, float Contrast, float Saturation) {
+public static class ImageManipulation{
+	public static Texture2D AdjustBCS(Image Source, float Brightness, float Contrast, float Saturation){
 		Image proxy = new Image();
 		proxy.CopyFrom(Source);
 
@@ -33,7 +33,7 @@ public static class ImageManipulation {
 		return ImageTexture.CreateFromImage(proxy);
 	}
 
-	public static Texture2D Clip(Image Source, float Percentage, ClipImgSpecs HowToClip) {
+	public static Texture2D Clip(Image Source, float Percentage, ClipImgSpecs HowToClip){
 		// Get the size of the image
 		int width = Source.GetWidth();
 		int height = Source.GetHeight();
@@ -45,16 +45,16 @@ public static class ImageManipulation {
 
 		int pixels = 0;
 
-		switch (HowToClip) {
+		switch (HowToClip){
 			case ClipImgSpecs.HorizontalFromLeft:
 				pixels = Mathf.FloorToInt(width * Percentage);
 
 				// Loop through each pixel and apply clip
-				for (int x = 0; x < width; x++) {
-					for (int y = 0; y < height; y++) {
+				for (int x = 0; x < width; x++){
+					for (int y = 0; y < height; y++){
 						// Get the original pixel color
 
-						if (x > pixels) {
+						if (x > pixels){
 							Color originalColor = proxy.GetPixel(x, y);
 							// make transparent.
 							Color shiftedColor = originalColor;
@@ -72,11 +72,11 @@ public static class ImageManipulation {
 				pixels = Mathf.FloorToInt(width * Percentage);
 
 				// Loop through each pixel and apply clip
-				for (int x = width; x > 0; x--) {
-					for (int y = 0; y < height; y++) {
+				for (int x = width; x > 0; x--){
+					for (int y = 0; y < height; y++){
 						// Get the original pixel color
 
-						if (x < pixels) {
+						if (x < pixels){
 							Color originalColor = proxy.GetPixel(x, y);
 							// make transparent.
 							Color shiftedColor = originalColor;
@@ -94,11 +94,11 @@ public static class ImageManipulation {
 				pixels = Mathf.FloorToInt(height * Percentage);
 
 				// Loop through each pixel and apply clip
-				for (int y = height; y > 0; y--) {
-					for (int x = 0; x < width; x++) {
+				for (int y = height; y > 0; y--){
+					for (int x = 0; x < width; x++){
 						// Get the original pixel color
 
-						if (y < pixels) {
+						if (y < pixels){
 							Color originalColor = proxy.GetPixel(x, y);
 							// make transparent.
 							Color shiftedColor = originalColor;
@@ -116,11 +116,11 @@ public static class ImageManipulation {
 				pixels = Mathf.FloorToInt(height * Percentage);
 
 				// Loop through each pixel and apply clip
-				for (int y = 0; y < height; y++) {
-					for (int x = 0; x < width; x++) {
+				for (int y = 0; y < height; y++){
+					for (int x = 0; x < width; x++){
 						// Get the original pixel color
 
-						if (y > pixels) {
+						if (y > pixels){
 							Color originalColor = proxy.GetPixel(x, y);
 							// make transparent.
 							Color shiftedColor = originalColor;
@@ -142,7 +142,7 @@ public static class ImageManipulation {
 		return ImageTexture.CreateFromImage(proxy);
 	}
 
-	public static Texture2D ColorizeTexture(Image Source, Color ColorToUse) {
+	public static Texture2D ColorizeTexture(Image Source, Color ColorToUse){
 		Image tex = new Image();
 		tex.CopyFrom(Source);
 
@@ -151,8 +151,8 @@ public static class ImageManipulation {
 		int height = tex.GetHeight();
 
 		// Loop through each pixel and apply colorization
-		for (int x = 0; x < width; x++) {
-			for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++){
+			for (int y = 0; y < height; y++){
 				// Get the original pixel color
 				Color originalColor = tex.GetPixel(x, y);
 
@@ -168,10 +168,10 @@ public static class ImageManipulation {
 		return ImageTexture.CreateFromImage(tex);
 	}
 
-	public static Texture2D CreateTextureAtlas(string[] ImagePaths) {
+	public static Texture2D CreateTextureAtlas(string[] ImagePaths){
 		// Load the six textures
 		ImageTexture[] textures = LoadTextures(ImagePaths);
-		if (textures == null) {
+		if (textures == null){
 			Logging.Log("error", "Failed to make Atlas Texture from given texture files.");
 			return new AtlasTexture();
 		}
@@ -184,7 +184,7 @@ public static class ImageManipulation {
 		Image atlasImage = Image.Create(atlasWidth, atlasHeight, false, Image.Format.Rgba8);
 
 		// Copy individual textures to the atlas
-		for (int i = 0; i < textures.Length; i++) {
+		for (int i = 0; i < textures.Length; i++){
 			//TODO: Add in code for knowing which image is what. 
 			ImageTexture texture = textures[i];
 			Image textureImage = texture.GetImage();
@@ -196,20 +196,21 @@ public static class ImageManipulation {
 		return ImageTexture.CreateFromImage(atlasImage);
 	}
 
-	public static Texture2D CropImage(Image Source, int Height, int Width) {
+	public static Texture2D CropImage(Image Source, int Height, int Width){
 		Image tex = new Image();
 		tex.CopyFrom(Source);
 		Source.Crop(Width, Height);
 		return ImageTexture.CreateFromImage(tex);
 	}
 
-	public static Texture2D LoadImageFromFile(string FilePath) {
+	public static Texture2D LoadImageFromFile(string FilePath){
 		Image tex;
 
 		// Load each texture
-		try {
+		try{
 			tex = Image.LoadFromFile(FilePath);
-		} catch (Exception error) {
+		}
+		catch (Exception error){
 			// Handle loading error, e.g., print a message
 			Logging.Log("error", $"Error loading texture: {FilePath}.\nError message: {error.Message}");
 			Image notex = Image.LoadFromFile("res://Sprites/MissingTexture.png");
@@ -220,17 +221,18 @@ public static class ImageManipulation {
 		return ImageTexture.CreateFromImage(tex);
 	}
 
-	private static ImageTexture[] LoadTextures(string[] Paths) {
+	private static ImageTexture[] LoadTextures(string[] Paths){
 		ImageTexture[] textures = new ImageTexture[Paths.Length];
 
-		for (int i = 0; i < Paths.Length; i++) {
+		for (int i = 0; i < Paths.Length; i++){
 			textures[i] = new ImageTexture();
 			Image tex;
 
 			// Load each texture
-			try {
+			try{
 				tex = Image.LoadFromFile(Paths[i]);
-			} catch (Exception error) {
+			}
+			catch (Exception error){
 				// Handle loading error, e.g., print a message
 				Logging.Log("error", $"Error loading texture: {Paths[i]}.\nError message: {error.Message}");
 				return null;
@@ -243,18 +245,18 @@ public static class ImageManipulation {
 		return textures;
 	}
 
-	public static Texture2D MakeTransparent(Image Source, Color SrcColor) {
+	public static Texture2D MakeTransparent(Image Source, Color SrcColor){
 		Image proxy = new Image();
 		proxy.CopyFrom(Source);
 
 		int height = proxy.GetHeight();
 		int width = proxy.GetWidth();
 
-		for (int x = 0; x < width; x++) {
-			for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++){
+			for (int y = 0; y < height; y++){
 				Color pixel = proxy.GetPixel(x, y);
 				pixel.A = 0;
-				if (pixel == SrcColor) {
+				if (pixel == SrcColor){
 					proxy.SetPixel(x, y, pixel);
 				}
 			}
@@ -264,7 +266,7 @@ public static class ImageManipulation {
 	}
 
 	public static Texture2D ManipulateTexture(Image Source, bool FlipHorizontal, bool FlipVertical,
-	                                          RotateImgSpec Rotation = RotateImgSpec.None) {
+		RotateImgSpec Rotation = RotateImgSpec.None){
 		Image tex = new Image();
 		tex.CopyFrom(Source);
 
@@ -278,7 +280,7 @@ public static class ImageManipulation {
 
 		// Rotate the image
 
-		switch (Rotation) {
+		switch (Rotation){
 			case RotateImgSpec.Right90:
 				tex.Rotate90(ClockDirection.Clockwise); // Rotate Right
 				break;
@@ -296,7 +298,7 @@ public static class ImageManipulation {
 		return ImageTexture.CreateFromImage(tex);
 	}
 
-	public static Texture2D MaskImage(Image Source, Image Mask) {
+	public static Texture2D MaskImage(Image Source, Image Mask){
 		Image proxy = new Image();
 		proxy.CopyFrom(Source);
 		Image proxyMask = new Image();
@@ -309,10 +311,10 @@ public static class ImageManipulation {
 
 		Color removed = new Color(0f, 0f, 0f, 0f);
 
-		for (int x = 0; x < width; x++) {
-			for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++){
+			for (int y = 0; y < height; y++){
 				Color pixel = proxyMask.GetPixel(x, y);
-				if (pixel.A == 0 || pixel == Colors.Black) {
+				if (pixel.A == 0 || pixel == Colors.Black){
 					proxy.SetPixel(x, y, removed);
 				}
 			}
@@ -321,17 +323,17 @@ public static class ImageManipulation {
 		return ImageTexture.CreateFromImage(proxy);
 	}
 
-	public static Texture2D ReplaceColor(Image Source, Color SrcColor, Color NewColor) {
+	public static Texture2D ReplaceColor(Image Source, Color SrcColor, Color NewColor){
 		Image proxy = new Image();
 		proxy.CopyFrom(Source);
 
 		int height = proxy.GetHeight();
 		int width = proxy.GetWidth();
 
-		for (int x = 0; x < width; x++) {
-			for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++){
+			for (int y = 0; y < height; y++){
 				Color pixel = proxy.GetPixel(x, y);
-				if (pixel == SrcColor) {
+				if (pixel == SrcColor){
 					proxy.SetPixel(x, y, NewColor);
 				}
 			}
@@ -340,7 +342,7 @@ public static class ImageManipulation {
 		return ImageTexture.CreateFromImage(proxy);
 	}
 
-	public static Texture2D ShiftHsv(Image Source, float HueShift, float SaturationShift, float ValueShift) {
+	public static Texture2D ShiftHsv(Image Source, float HueShift, float SaturationShift, float ValueShift){
 		// Make a proxy...
 		Image proxy = new Image();
 		proxy.CopyFrom(Source);
@@ -350,8 +352,8 @@ public static class ImageManipulation {
 		int height = proxy.GetHeight();
 
 		// Loop through each pixel and apply HSV shift
-		for (int x = 0; x < width; x++) {
-			for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++){
+			for (int y = 0; y < height; y++){
 				// Get the original pixel color
 				Color originalColor = proxy.GetPixel(x, y);
 
@@ -374,7 +376,7 @@ public static class ImageManipulation {
 		return ImageTexture.CreateFromImage(proxy);
 	}
 
-	public static Texture2D ShiftHue(Image Source, float HueShift) {
+	public static Texture2D ShiftHue(Image Source, float HueShift){
 		Image proxy = new Image();
 		proxy.CopyFrom(Source);
 
@@ -383,8 +385,8 @@ public static class ImageManipulation {
 		int height = proxy.GetHeight();
 
 		// Loop through each pixel and apply hue shift
-		for (int x = 0; x < width; x++) {
-			for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++){
+			for (int y = 0; y < height; y++){
 				// Get the original pixel color
 				Color originalColor = proxy.GetPixel(x, y);
 
@@ -406,16 +408,16 @@ public static class ImageManipulation {
 	}
 }
 
-public enum RotateImgSpec {
-	None      = 0,
-	Right90   = 1,
-	Left90    = 2,
+public enum RotateImgSpec{
+	None = 0,
+	Right90 = 1,
+	Left90 = 2,
 	Rotate180 = 4,
 }
 
-public enum ClipImgSpecs {
-	VerticalFromTop     = 1,
-	VerticalFromBottom  = 2,
-	HorizontalFromLeft  = 3,
+public enum ClipImgSpecs{
+	VerticalFromTop = 1,
+	VerticalFromBottom = 2,
+	HorizontalFromLeft = 3,
 	HorizontalFromRight = 4,
 }

@@ -30,8 +30,8 @@ using Godot;
 
 namespace ApophisSoftware;
 
-public partial class LuaController : Node {
-	public  LuaApi   lua = LUA.lua;
+public partial class LuaController : Node{
+	public LuaApi lua = LUA.lua;
 	private Callable print;
 
 	// API Objects
@@ -39,24 +39,24 @@ public partial class LuaController : Node {
 
 	#region Ctor / Dtor
 
-	public LuaController() {
+	public LuaController(){
 		InitializeThis();
 	}
 
-	public override void _ExitTree() {
+	public override void _ExitTree(){
 		lua.Dispose();
 		base._ExitTree();
 	}
 
 	#endregion
 
-	private void InitializeThis() {
+	private void InitializeThis(){
 		// define libraries that the lua code has access to. 
-		Godot.Collections.Array<string> libraries = new() {
-			"base",  // Base Lua commands
+		Godot.Collections.Array<string> libraries = new(){
+			"base", // Base Lua commands
 			"debug", // Debug.
-			"math",  // Math Functions.
-			"utf8",  // UTF-8 specific.
+			"math", // Math Functions.
+			"utf8", // UTF-8 specific.
 			"table", // Table functionality.
 			"string" // String Specific functionality.
 		};
@@ -71,25 +71,25 @@ public partial class LuaController : Node {
 		RegisterAPI();
 	}
 
-	private void LuaPrint(string Message) {
+	private void LuaPrint(string Message){
 		Logging.Log("[LUA]: " + Message);
 	}
 
-	internal void Dofile(string Filename) {
+	internal void Dofile(string Filename){
 		lua.DoFile(Filename);
 	}
 
-	internal void CreateGlobalVar(string VariableName, string VariableValue) {
+	internal void CreateGlobalVar(string VariableName, string VariableValue){
 		// Assign a named Lua Variable and give it a value.
 		lua.PushVariant(VariableName, VariableValue);
 	}
 
-	internal void CreateGlobalVar(string VariableName, GodotObject VariableValue) {
+	internal void CreateGlobalVar(string VariableName, GodotObject VariableValue){
 		// Assign a named Lua Variable and give it a value.
 		lua.PushVariant(VariableName, VariableValue);
 	}
 
-	internal void RegisterAPI() {
+	internal void RegisterAPI(){
 		// Removed in favor of just aliasing it in the builtin.lua code.
 		// CreateGlobalVar("minetest", Minetest);
 		CreateGlobalVar("vfcore", VFcore);
@@ -99,7 +99,7 @@ public partial class LuaController : Node {
 
 		CreateGlobalVar("Item", _item);
 		LuaError error = lua.PushVariant("Item", item_wtuple);
-		if (Utils.TestForError(error)) {
+		if (Utils.TestForError(error)){
 			Logging.Log("error", "Couldn't Push Item(name) creation function in Lua Code.");
 		}
 
@@ -109,7 +109,7 @@ public partial class LuaController : Node {
 
 		CreateGlobalVar("Node", _NodeBlock);
 		error = lua.PushVariant("Node", nb_wtuple);
-		if (Utils.TestForError(error)) {
+		if (Utils.TestForError(error)){
 			Logging.Log("error", "Couldn't Push Node(name) creation function in Lua Code.");
 		}
 
@@ -119,47 +119,49 @@ public partial class LuaController : Node {
 
 		CreateGlobalVar("ItemStack", _itemStack);
 		error = lua.PushVariant("ItemStack", is_wtuple);
-		if (Utils.TestForError(error)) {
+		if (Utils.TestForError(error)){
 			Logging.Log("error", "Couldn't Push ItemStack(name) creation function in Lua Code.");
 		}
 	}
 
-	public override void _Ready() {
+	public override void _Ready(){
 		Variant error = lua.DoString(@"
 					vfcore.log (""system"" , ""Lua System Ready."")
 				");
-		try {
-			LuaError _Error = (LuaError) error;
+		try{
+			LuaError _Error = (LuaError)error;
 
-			if (_Error != null && _Error.Message != "") {
+			if (_Error != null && _Error.Message != ""){
 				Logging.Log("error", "An error occurred calling DoString.");
 				Logging.Log("error", "ERROR " + _Error.Type + ": " + _Error.Message);
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e){
 			// Do Nothing. This is just to make sure that casting works, and nothing throws a real error. 
 			// Done because of the changes made to DoString and DoFile in v2.1-beta11. -MRO
 		}
 
 		lua.UseCallables = false;
 		Variant BuiltInVar = lua.DoFile("res://Scripts/LuaObjects/Lua/builtin.lua");
-		try {
-			LuaError BuiltInError = (LuaError) BuiltInVar;
+		try{
+			LuaError BuiltInError = (LuaError)BuiltInVar;
 
-			if (BuiltInError != null && BuiltInError.Message != "") {
+			if (BuiltInError != null && BuiltInError.Message != ""){
 				Logging.Log("system", "Error: " + BuiltInError.Type);
 				Logging.Log("system", "Error: " + BuiltInError.Message);
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e){
 			// Do Nothing. This is just to make sure that casting works, and nothing throws a real error. 
 			// Done because of the changes made to DoString and DoFile in v2.1-beta11. -MRO
 		}
 	}
 
-	public override void _Process(double delta) {
+	public override void _Process(double delta){
 		base._Process(delta);
 	}
 
-	internal bool IsInPath(string RelativePath) {
+	internal bool IsInPath(string RelativePath){
 		string basePath = Utils.GetStoragePath();
 		string fullPath = Path.Combine(basePath, RelativePath);
 

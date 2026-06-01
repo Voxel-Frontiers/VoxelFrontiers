@@ -33,7 +33,7 @@ using Environment = System.Environment;
 
 namespace ApophisSoftware;
 
-public class Utils {
+public class Utils{
 	/*public static Texture2D LoadImageToTexture2D(string filename) {
 		Texture2D RetImage = new Texture2D(1, 1);
 
@@ -47,8 +47,8 @@ public class Utils {
 		return RetImage;
 	}*/
 
-	internal static bool ANDROID   { get; set; }
-	internal static bool WEBDEPLOY { get; set; }
+	internal static bool ANDROID{ get; set; }
+	internal static bool WEBDEPLOY{ get; set; }
 
 	// --------------------------------------------
 	// Localization dictionaries.		
@@ -57,24 +57,25 @@ public class Utils {
 	private static Dictionary<string, string> EngineLangFR = new();
 	private static Dictionary<string, string> EngineLangJA = new();
 	private static Dictionary<string, string> EngineLangES = new();
-	private static Dictionary<string, string> GameLangDE   = new();
-	private static Dictionary<string, string> GameLangFR   = new();
-	private static Dictionary<string, string> GameLangJA   = new();
-	private static Dictionary<string, string> GameLangES   = new();
+	private static Dictionary<string, string> GameLangDE = new();
+	private static Dictionary<string, string> GameLangFR = new();
+	private static Dictionary<string, string> GameLangJA = new();
+	private static Dictionary<string, string> GameLangES = new();
 
 	// --------------------------------------------
 
-	public static T ConvertTo<T>(object Source) {
-		return (T) Convert.ChangeType(Source, typeof(T));
+	public static T ConvertTo<T>(object Source){
+		return (T)Convert.ChangeType(Source, typeof(T));
 	}
 
-	public static string GetStoragePath() {
+	public static string GetStoragePath(){
 		string PathString = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-		if (!ANDROID && !WEBDEPLOY) {
+		if (!ANDROID && !WEBDEPLOY){
 			PathString += "/.Apophis Software/.mineclonepp";
 			Directory.CreateDirectory(PathString); // make the path string, if it doesn't exist.
 			return PathString;
-		} else {
+		}
+		else{
 			// When not ran on a Desktop system, use the built in user data dir. Which, points to the data path for
 			// the storage device. For Android, it's the app's storage; for WebGL, it's the section of the Browser
 			// storage that the webgl app has access to.
@@ -86,13 +87,13 @@ public class Utils {
 		}
 	}
 
-	public static string ProcessConfSettingFromFile(string Filename, string Setting) {
+	public static string ProcessConfSettingFromFile(string Filename, string Setting){
 		StreamReader srStream = File.OpenText(Filename);
 		string value = "";
 
-		while (!srStream.EndOfStream) {
+		while (!srStream.EndOfStream){
 			value = srStream.ReadLine().ToLower();
-			if (value.StartsWith(Setting)) { // if found, strip out the bs. should end up with a "mcl_" something.
+			if (value.StartsWith(Setting)){ // if found, strip out the bs. should end up with a "mcl_" something.
 				value = value.Replace(Setting, ""); // "=\"{}#"
 				value = value.Replace(" ", "");
 				value = value.Replace("=", "");
@@ -106,11 +107,11 @@ public class Utils {
 		return value;
 	}
 
-	public static void SaveSettingsToFile(string SettingsConf, Dictionary<string, object> SettingsDict) {
+	public static void SaveSettingsToFile(string SettingsConf, Dictionary<string, object> SettingsDict){
 		StreamWriter swWriter = new StreamWriter(SettingsConf);
 		string data;
 
-		foreach (KeyValuePair<string, object> setting in SettingsDict) {
+		foreach (KeyValuePair<string, object> setting in SettingsDict){
 			data = setting.Key + "=" + setting.Value.ToString();
 			swWriter.WriteLine(data.Trim());
 		}
@@ -120,8 +121,8 @@ public class Utils {
 		GC.Collect();
 	}
 
-	public static Dictionary<string, object> ProcessSavedSettingsFile(string ConfFilename) {
-		if (File.Exists(ConfFilename) == false) {
+	public static Dictionary<string, object> ProcessSavedSettingsFile(string ConfFilename){
+		if (File.Exists(ConfFilename) == false){
 			Logging.Log("warning", "Tried to get settings from a non-existent file:\n" + ConfFilename);
 
 			return null; // not there? exit.
@@ -132,10 +133,10 @@ public class Utils {
 		StreamReader srReader = new StreamReader(ConfFilename);
 		string data;
 		string[] setdata;
-		while (srReader.EndOfStream == false) {
+		while (srReader.EndOfStream == false){
 			data = srReader.ReadLine();
-			if (data != null) {
-				if (data.Contains('=') && data.StartsWith("#") == false) {
+			if (data != null){
+				if (data.Contains('=') && data.StartsWith("#") == false){
 					setdata = data.Split("=");
 					if (!settings.ContainsKey(setdata[0].ToLower().Trim()))
 						settings.Add(setdata[0].ToLower().Trim(), setdata[1].ToLower().Trim());
@@ -148,7 +149,7 @@ public class Utils {
 		return settings;
 	}
 
-	public static Dictionary<string, Setting> ProcessSettingFromTextFile(string Filename) {
+	public static Dictionary<string, Setting> ProcessSettingFromTextFile(string Filename){
 		Dictionary<string, Setting> settings = new Dictionary<string, Setting>();
 		Setting setting = new Setting();
 		StreamReader srStream = File.OpenText(Filename);
@@ -156,12 +157,12 @@ public class Utils {
 
 		string SettingsCategory = "General";
 
-		while (!srStream.EndOfStream) {
+		while (!srStream.EndOfStream){
 			setting.SettingsFile = Filename;
 			value = srStream.ReadLine().ToLower().Trim();
 
 			if (value == "") // handle a new setting.
-				if (settings.ContainsKey(setting.SettingName) == false) {
+				if (settings.ContainsKey(setting.SettingName) == false){
 					// prevent adding 2 of the same settings. Also, no blank settings.
 					settings.Add(setting.SettingName, setting); // Add to existing setting. 
 					if (settings.ContainsKey("")) settings.Remove("");
@@ -169,29 +170,32 @@ public class Utils {
 					setting = new Setting();
 				}
 
-			if (value.StartsWith("[")) { // Handle Category Specifier.
+			if (value.StartsWith("[")){ // Handle Category Specifier.
 				setting.Category = value.Remove(0, 1).Replace("]", "").ToUpper();
 				value = ""; // A nothing value.
 				SettingsCategory = setting.Category;
-			} else {
+			}
+			else{
 				setting.Category = SettingsCategory;
 			}
 
-			if (value.StartsWith("#")) {    // handle Description
+			if (value.StartsWith("#")){ // handle Description
 				value = value.Remove(0, 1); // Remove the first char (#) from the string.
 				value = value.Trim();
 				value = value.Replace("Minetest", "[old engine]");
 				value = value.Replace("minetest", "crap");
-				if (value != "")                          // don't put in blank lines. 
+				if (value != "") // don't put in blank lines. 
 					setting.Description.Add(value + " "); // add the new line to the string description.
-			} else if (value.StartsWith("#") == false && value != "") {
+			}
+			else if (value.StartsWith("#") == false && value != ""){
 				// here is the bulk of the setting...
-				char[] splitter = {'(', ')'};
+				char[] splitter = { '(', ')' };
 				string[] setstr = value.Split(splitter);
-				string[] setstrData = {""};
-				try {
+				string[] setstrData = { "" };
+				try{
 					setstrData = setstr[2].Trim().Split(' ');
-				} catch (Exception e) {
+				}
+				catch (Exception e){
 					Logging.Log("error", "Malformed Setting.\n\r" + e);
 					return null;
 				}
@@ -207,7 +211,7 @@ public class Utils {
 				// mcl_weather_rain_particles (Rain particles) int 500 0
 				// the 500 is the Default value, 0 is the minimum value.
 
-				switch (setting.SettingType.ToLower()) {
+				switch (setting.SettingType.ToLower()){
 					case "enum":
 						Logging.Log(value);
 						//[INFO]: mcl_node_particles (block particles detail level) enum none high,medium,low,none
@@ -249,10 +253,10 @@ public class Utils {
 
 				setting.CurrentValue = setting.DefaultValue;
 			} // if
-		}     // while.
+		} // while.
 
 		// Handle the last (or in some cases the ONLY) setting.
-		if (settings.ContainsKey(setting.SettingName) == false) {
+		if (settings.ContainsKey(setting.SettingName) == false){
 			// prevent adding 2 of the same settings. Also, no blank settings.
 
 			settings.Add(setting.SettingName, setting); // Add to existing setting. 
@@ -261,23 +265,24 @@ public class Utils {
 		}
 
 		return settings; // return the defined settings from this file.
-	}                    // function.
+	} // function.
 
-	public static bool TestForError(Variant X) {
+	public static bool TestForError(Variant X){
 		bool isError = false;
 
 		if (X.Obj == null) return isError;
 
-		try {
-			if (X.Obj.GetType() == typeof(LuaError)) {
-				var z = (LuaError) X;
-				if (z.Message != "") {
+		try{
+			if (X.Obj.GetType() == typeof(LuaError)){
+				var z = (LuaError)X;
+				if (z.Message != ""){
 					isError = true;
 					Logging.Log("error", "LUA Runtime Error Catch.");
 					Logging.Log("error", "ERROR " + z.Type + ": " + z.Message);
 				}
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e){
 			Logging.Log(e);
 			return false;
 		}
@@ -285,15 +290,15 @@ public class Utils {
 		return isError;
 	}
 
-	public Utils() {
+	public Utils(){
 		// Have a basic Ctor.
 	}
 
-	static Utils() {
+	static Utils(){
 		GetLocalization(); // initialize the language.
 	}
 
-	internal static string GetRawLocalizationCode() {
+	internal static string GetRawLocalizationCode(){
 		// Get the current culture
 		CultureInfo currentCulture = CultureInfo.CurrentCulture;
 
@@ -303,11 +308,11 @@ public class Utils {
 		return languageCode.ToUpper();
 	}
 
-	internal static string GetLocalization() {
+	internal static string GetLocalization(){
 		// Get the current language code (two-letter ISO language name)
 		string languageCode = GetRawLocalizationCode();
 
-		switch (languageCode) {
+		switch (languageCode){
 			case "EN":
 				CurrentLocale = LanguageCodes.en;
 				break;
@@ -334,45 +339,49 @@ public class Utils {
 
 	public static LanguageCodes CurrentLocale = LanguageCodes.en;
 
-	public static string S(string StrDisplay) {
+	public static string S(string StrDisplay){
 		return LocalizeString(StrDisplay, CurrentLocale);
 	}
 
-	public static string GsTranslateString(string StrDisplay) {
+	public static string GsTranslateString(string StrDisplay){
 		return LocalizeString(StrDisplay, CurrentLocale, true);
 	}
 
-	public static string LocalizeString(string DisplayString, LanguageCodes Lang, bool ForGame = false) {
+	public static string LocalizeString(string DisplayString, LanguageCodes Lang, bool ForGame = false){
 		// This switch block uses fall-through logic. 
-		switch (Lang) {
+		switch (Lang){
 			case LanguageCodes.de:
-				if (ForGame) {
+				if (ForGame){
 					if (GameLangDE.TryGetValue(DisplayString, out var s)) return s;
-				} else {
+				}
+				else{
 					if (EngineLangDE.TryGetValue(DisplayString, out var s)) return s;
 				}
 
 				break;
 			case LanguageCodes.fr:
-				if (ForGame) {
+				if (ForGame){
 					if (GameLangFR.TryGetValue(DisplayString, out var s)) return s;
-				} else {
+				}
+				else{
 					if (EngineLangFR.TryGetValue(DisplayString, out var s)) return s;
 				}
 
 				break;
 			case LanguageCodes.es:
-				if (ForGame) {
+				if (ForGame){
 					if (GameLangES.TryGetValue(DisplayString, out var s)) return s;
-				} else {
+				}
+				else{
 					if (EngineLangES.TryGetValue(DisplayString, out var s)) return s;
 				}
 
 				break;
 			case LanguageCodes.ja:
-				if (ForGame) {
+				if (ForGame){
 					if (GameLangJA.TryGetValue(DisplayString, out var s)) return s;
-				} else {
+				}
+				else{
 					if (EngineLangJA.TryGetValue(DisplayString, out var s)) return s;
 				}
 
@@ -385,7 +394,7 @@ public class Utils {
 		return DisplayString;
 	}
 
-	public static void LoadLocalizationFile(string Filename, LanguageCodes LangCode, bool ForGame = false) {
+	public static void LoadLocalizationFile(string Filename, LanguageCodes LangCode, bool ForGame = false){
 		if (File.Exists(Filename) == false)
 			return;
 
@@ -393,49 +402,53 @@ public class Utils {
 
 		string[] data;
 		string temp;
-		while (srTRFile.EndOfStream == false) {
+		while (srTRFile.EndOfStream == false){
 			temp = srTRFile.ReadLine();
 			if (temp.StartsWith("#"))
 				continue; // skip lines with # as the starting character. aka, skip remarks.
 
 			data = temp.Split("=");
 
-			switch (LangCode) {
+			switch (LangCode){
 				case LanguageCodes.de:
-					if (ForGame) {
+					if (ForGame){
 						if (GameLangDE.ContainsKey(data[0].Trim()) == false)
 							GameLangDE.Add(data[0].Trim(), data[1].Trim());
-					} else {
+					}
+					else{
 						if (EngineLangDE.ContainsKey(data[0].Trim()) == false)
 							EngineLangDE.Add(data[0].Trim(), data[1].Trim());
 					}
 
 					break;
 				case LanguageCodes.es:
-					if (ForGame) {
+					if (ForGame){
 						if (GameLangES.ContainsKey(data[0].Trim()) == false)
 							GameLangES.Add(data[0].Trim(), data[1].Trim());
-					} else {
+					}
+					else{
 						if (EngineLangES.ContainsKey(data[0].Trim()) == false)
 							EngineLangES.Add(data[0].Trim(), data[1].Trim());
 					}
 
 					break;
 				case LanguageCodes.fr:
-					if (ForGame) {
+					if (ForGame){
 						if (GameLangFR.ContainsKey(data[0].Trim()) == false)
 							GameLangFR.Add(data[0].Trim(), data[1].Trim());
-					} else {
+					}
+					else{
 						if (EngineLangFR.ContainsKey(data[0].Trim()) == false)
 							EngineLangFR.Add(data[0].Trim(), data[1].Trim());
 					}
 
 					break;
 				case LanguageCodes.ja:
-					if (ForGame) {
+					if (ForGame){
 						if (GameLangJA.ContainsKey(data[0].Trim()) == false)
 							GameLangJA.Add(data[0].Trim(), data[1].Trim());
-					} else {
+					}
+					else{
 						if (EngineLangJA.ContainsKey(data[0].Trim()) == false)
 							EngineLangJA.Add(data[0].Trim(), data[1].Trim());
 					}
@@ -455,24 +468,24 @@ public class Utils {
 	// Lua Section.
 	private static LuaController _luaController;
 
-	internal static void SetLuaController(LuaController LC) {
+	internal static void SetLuaController(LuaController LC){
 		_luaController = LC;
 	}
 
-	internal static LuaController GetLuaController() {
+	internal static LuaController GetLuaController(){
 		return _luaController;
 	}
 
 	// Design Note: (TODO:) make where this is called from instantiate the Lua Controller, so that it's not running from
 	// the start of the program. 
-	internal static void LoadLuaScripts(Dictionary<string, string> Scripts) {
-		foreach (var kvp in Scripts) {
+	internal static void LoadLuaScripts(Dictionary<string, string> Scripts){
+		foreach (var kvp in Scripts){
 			LUA.lua.DoString("_exec_file(\"" + kvp.Value + "\", " + kvp.Key + ")");
 		}
 	}
 } // class Utils.
 
-public enum LanguageCodes {
+public enum LanguageCodes{
 	en = 0, // project default language.
 	de = 1,
 	fr = 2,

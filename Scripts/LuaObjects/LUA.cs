@@ -27,9 +27,9 @@ using Godot;
 
 namespace ApophisSoftware.LuaObjects;
 
-public static class LUA {
+public static class LUA{
 	public static readonly LuaApi lua = new();
 
-	static LUA() {
+	static LUA(){
 	}
 }

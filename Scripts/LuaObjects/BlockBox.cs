@@ -73,16 +73,16 @@ namespace ApophisSoftware.LuaObjects;
    }
  */
 
-public class BlockBox {
+public class BlockBox{
 	private string _type;
 
 	/// <summary>
 	/// Type can be: "regular", "fixed", "wallmounted", or "connected".
 	/// </summary>
-	public string type {
-		get { return _type; }
-		set {
-			switch (value.ToLower()) {
+	public string type{
+		get{ return _type; }
+		set{
+			switch (value.ToLower()){
 				case "regular":
 					break;
 				case "fixed":
@@ -123,6 +123,6 @@ public class BlockBox {
 	public BoxDef[] disconnected_sides;
 }
 
-public class BoxDef {
+public class BoxDef{
 	private float[] sides;
 }

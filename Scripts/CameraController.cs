@@ -27,13 +27,13 @@ using Godot;
 
 namespace ApophisSoftware;
 
-public enum ViewCamera {
+public enum ViewCamera{
 	CameraStateNormal = 0,
-	CameraStateFront  = 1,
+	CameraStateFront = 1,
 	CameraStateBehind = 2
 }
 
-public partial class CameraController : Node3D {
+public partial class CameraController : Node3D{
 	[ExportGroup("Character Camera Properties")] [ExportCategory("Camera Controller Properties")] [Export]
 	public Camera3D FirstPersonCamera;
 
@@ -48,8 +48,8 @@ public partial class CameraController : Node3D {
 	private static CameraController _instance;
 
 	// Public property to access the singleton instance
-	public static CameraController Instance {
-		get {
+	public static CameraController Instance{
+		get{
 			if (_instance == null) _instance = new CameraController();
 
 			return _instance;
@@ -57,22 +57,22 @@ public partial class CameraController : Node3D {
 	}
 
 	// Private constructor to prevent external instantiation
-	private CameraController() {
+	private CameraController(){
 	}
 
 	// Called when the node enters the scene tree for the first time.
-	public override void _Ready() {
+	public override void _Ready(){
 		FirstPersonCamera.Visible = true;
 		ThirdPersonCameraBehind.Visible = false;
 		ThirdPersonCameraFront.Visible = false;
 	}
 
 	// Called every frame. 'delta' is the elapsed time since the previous frame.
-	public override void _Process(double delta) {
+	public override void _Process(double delta){
 	}
 
-	internal void ChangeCurrentCamera(ViewCamera NewState) {
-		switch (NewState) {
+	internal void ChangeCurrentCamera(ViewCamera NewState){
+		switch (NewState){
 			case ViewCamera.CameraStateNormal:
 				FirstPersonCamera.Visible = true;
 				ThirdPersonCameraBehind.Visible = false;
@@ -101,8 +101,8 @@ public partial class CameraController : Node3D {
 		CurrentState = NewState;
 	}
 
-	internal void ChangeCurrentCamera() {
-		switch (CurrentState) {
+	internal void ChangeCurrentCamera(){
+		switch (CurrentState){
 			case ViewCamera.CameraStateNormal:
 				FirstPersonCamera.Visible = true;
 				ChangeCurrentCamera(ViewCamera.CameraStateBehind);

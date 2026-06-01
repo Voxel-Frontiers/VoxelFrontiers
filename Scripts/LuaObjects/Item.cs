@@ -175,57 +175,58 @@ namespace ApophisSoftware.LuaObjects;
 ///     -- should start with `_` to avoid naming collisions with future engine
 ///     -- usage.
 /// </summary>
-public partial class Item : RefCounted {
+public partial class Item : RefCounted{
 	#region CTOR
 
-	public Item(string _Name) {
+	public Item(string _Name){
 		if (_Name == "")
 			name = "unknown";
 		else
 			name = _Name;
 	}
 
-	public Item() {
+	public Item(){
 		name = "unknown";
 	}
 
-	public Item CreateItem(LuaTuple args) {
+	public Item CreateItem(LuaTuple args){
 		Item _item = new Item();
 
-		if (args != null && !args.IsEmpty()) {
-			_item.name = (string) args.ToArray()[0];
+		if (args != null && !args.IsEmpty()){
+			_item.name = (string)args.ToArray()[0];
 		}
 
 		return _item;
 	}
 
-	public Variant __index(LuaApi _lua, Variant index) {
-		if (Get((string) index).Obj != null)
+	public Variant __index(LuaApi _lua, Variant index){
+		if (Get((string)index).Obj != null)
 			// is true if it is return self.Get(index) else return the dictionary index
-			return Get((string) index);
+			return Get((string)index);
 
-		if (user_def.ContainsKey((string) index))
-			return user_def[(string) index];
+		if (user_def.ContainsKey((string)index))
+			return user_def[(string)index];
 		else
 			return "Unknown property: " + index;
 	}
 
-	private LuaError __newindex(LuaApi _lua, Variant index, Variant value) {
+	private LuaError __newindex(LuaApi _lua, Variant index, Variant value){
 		LuaError error;
 
-		if (Get((string) index).Obj != null) {
+		if (Get((string)index).Obj != null){
 			// is true if it is return self.Get(index) else return the dictionary index
-			Set((string) index, value);
+			Set((string)index, value);
 			return null;
 		}
 
-		if (user_def.ContainsKey((string) index)) {
-			string errmsg = "Error: Cannot add existing index key: " + (string) index;
+		if (user_def.ContainsKey((string)index)){
+			string errmsg = "Error: Cannot add existing index key: " + (string)index;
 			errmsg += " on object: " + name;
 			errmsg += "\nUse .set_custom_field({\"field_name\", value}) instead.";
 			error = LuaError.NewError(errmsg, LuaError.ErrorType.Runtime);
-		} else {
-			user_def.Add((string) index, value); // add in the "index" with the value.
+		}
+		else{
+			user_def.Add((string)index, value); // add in the "index" with the value.
 			error = null;
 		}
 
@@ -234,26 +235,26 @@ public partial class Item : RefCounted {
 
 	#endregion
 
-	public string  name;
-	public string  inventory_image   = "";
-	public string  inventory_overlay = "";
-	public string  wield_image       = "";
-	public string  wield_overlay     = "";
-	public Vector3 wield_scale       = new(1, 1, 1); // default to 1.0 scale on all axes.
-	public string  palette           = "";
-	public string  color             = "#ffffffff"; // hex-code color representation. aka ColorSpec
+	public string name;
+	public string inventory_image = "";
+	public string inventory_overlay = "";
+	public string wield_image = "";
+	public string wield_overlay = "";
+	public Vector3 wield_scale = new(1, 1, 1); // default to 1.0 scale on all axes.
+	public string palette = "";
+	public string color = "#ffffffff"; // hex-code color representation. aka ColorSpec
 
-	public string description {
+	public string description{
 		get => metaData.getstring("description", "");
 		set => metaData.setstring("description", value);
 	}
 
-	public string   short_description = "";
-	public string[] tiles             = new[] {"", "", "", "", "", ""}; // +Y, -Y, +X, -X, +Z, -Z
-	public string[] overlay_tiles     = new[] {"", "", "", "", "", ""};
+	public string short_description = "";
+	public string[] tiles = new[]{ "", "", "", "", "", "" }; // +Y, -Y, +X, -X, +Z, -Z
+	public string[] overlay_tiles = new[]{ "", "", "", "", "", "" };
 
 	public string[]
-		special_tiles = new[] {"", "", "", "", "", ""}; //special_tiles = {tile definition 1, Tile definition 2}
+		special_tiles = new[]{ "", "", "", "", "", "" }; //special_tiles = {tile definition 1, Tile definition 2}
 
 	public Godot.Collections.Dictionary<string, int>
 		groups =
@@ -285,22 +286,22 @@ public partial class Item : RefCounted {
 #nullable enable // used to allow node_placement_prediction to be null, and not garbage collected.
 	public string? node_placement_prediction = null; // NYI
 #nullable disable
-	public string                                        node_dig_prediction = "air"; // NYI
-	public LuaFunctionRef                                on_place;                    // On_Place Function Code.
-	public LuaFunctionRef                                on_secondary_use;
-	public LuaFunctionRef                                on_drop;
-	public LuaFunctionRef                                on_pickup;
-	public LuaFunctionRef                                on_use;
-	public LuaFunctionRef                                after_use;
-	public ToolsCap                                      tool_capabilities = new();
-	public Godot.Collections.Dictionary<string, Variant> user_def          = new();
+	public string node_dig_prediction = "air"; // NYI
+	public LuaFunctionRef on_place; // On_Place Function Code.
+	public LuaFunctionRef on_secondary_use;
+	public LuaFunctionRef on_drop;
+	public LuaFunctionRef on_pickup;
+	public LuaFunctionRef on_use;
+	public LuaFunctionRef after_use;
+	public ToolsCap tool_capabilities = new();
+	public Godot.Collections.Dictionary<string, Variant> user_def = new();
 
 	public string liquid_alternative_flowing = ""; // liquid_alternative_flowing = "example:water_flowing"
-	public string liquid_alternative_source  = ""; // liquid_alternative_source = "example:water_source"
+	public string liquid_alternative_source = ""; // liquid_alternative_source = "example:water_source"
 
 
-	public void set_custom_field(Variant _KeyValPair) {
-		Godot.Collections.Dictionary<string, Variant> KVP = (Godot.Collections.Dictionary<string, Variant>) _KeyValPair;
+	public void set_custom_field(Variant _KeyValPair){
+		Godot.Collections.Dictionary<string, Variant> KVP = (Godot.Collections.Dictionary<string, Variant>)_KeyValPair;
 		foreach (KeyValuePair<string, Variant> keyValuePair in KVP)
 			if (user_def.ContainsKey(keyValuePair.Key))
 				user_def[keyValuePair.Key] =
@@ -309,7 +310,7 @@ public partial class Item : RefCounted {
 				user_def.Add(keyValuePair.Key, keyValuePair.Value);
 	}
 
-	public Variant get_custom_field(string Key) {
+	public Variant get_custom_field(string Key){
 		if (user_def.ContainsKey(Key))
 			return user_def[Key];
 		else
@@ -318,14 +319,14 @@ public partial class Item : RefCounted {
 
 
 // Private Property field variables / backing.
-	private int?   _move_resistance = 0;
-	private int    _lightsource     = 0;
-	private string _liquidtype      = "none"; //  -- specifies liquid flowing physics
-	private bool   _floodable       = false;
+	private int? _move_resistance = 0;
+	private int _lightsource = 0;
+	private string _liquidtype = "none"; //  -- specifies liquid flowing physics
+	private bool _floodable = false;
 
-	public bool floodable {
+	public bool floodable{
 		get => _floodable;
-		set {
+		set{
 			if (_liquidtype != "none")
 				_floodable = false;
 			else
@@ -344,10 +345,10 @@ public partial class Item : RefCounted {
 	///     -- If it's "source" or "flowing", then the
 	///     -- `liquid_alternative_*` fields _must_ be specified
 	/// </summary>
-	public string liquidtype {
+	public string liquidtype{
 		get => _liquidtype;
-		set {
-			switch (value.ToLower()) {
+		set{
+			switch (value.ToLower()){
 				case "none":
 					_liquidtype = "none";
 					break;
@@ -366,9 +367,9 @@ public partial class Item : RefCounted {
 		}
 	}
 
-	public int light_source {
+	public int light_source{
 		get => _lightsource;
-		set {
+		set{
 			_lightsource = value;
 			if (_lightsource < 0)
 				_lightsource = 0;
@@ -376,12 +377,13 @@ public partial class Item : RefCounted {
 		}
 	}
 
-	public int? move_resistance {
+	public int? move_resistance{
 		get => _move_resistance;
-		set {
-			if (value == null) {
+		set{
+			if (value == null){
 				_move_resistance = 1; //TODO: Make this set to flow resistance.
-			} else {
+			}
+			else{
 				_move_resistance = value;
 				if (_move_resistance > 7) _move_resistance = 7;
 			}
@@ -391,16 +393,16 @@ public partial class Item : RefCounted {
 	// ---------------------------------------------
 	private MetaData metaData = new();
 
-	public MetaData getmeta() {
+	public MetaData getmeta(){
 		return metaData;
 	}
 
-	public string get_short_description() {
+	public string get_short_description(){
 		short_description = metaData.getstring("short_description", "");
 		return short_description;
 	}
 
-	public override string ToString() {
+	public override string ToString(){
 		StringBuilder sb = new StringBuilder();
 		sb.Append("Item Class Object: ");
 		sb.Append(name);
@@ -427,7 +429,7 @@ public partial class Item : RefCounted {
 		sb.AppendLine(color.ToString());
 
 		sb.AppendLine("groups: {");
-		foreach (var val in groups) {
+		foreach (var val in groups){
 			sb.Append("\t\"");
 			sb.Append(val.Key + "\" = ");
 			sb.AppendLine("\"" + val.Value + "\"");
@@ -436,7 +438,7 @@ public partial class Item : RefCounted {
 		sb.AppendLine("}");
 
 		sb.AppendLine("tiles: {");
-		foreach (string str in tiles) {
+		foreach (string str in tiles){
 			sb.Append("\"");
 			sb.Append(str);
 			sb.Append("\",");
@@ -446,7 +448,7 @@ public partial class Item : RefCounted {
 		sb.AppendLine("}");
 
 		sb.AppendLine("overlay_tiles: {");
-		foreach (string str in overlay_tiles) {
+		foreach (string str in overlay_tiles){
 			sb.Append("\"");
 			sb.Append(str);
 			sb.Append("\",");
@@ -456,7 +458,7 @@ public partial class Item : RefCounted {
 		sb.AppendLine("}");
 
 		sb.AppendLine("special_tiles: {");
-		foreach (string str in special_tiles) {
+		foreach (string str in special_tiles){
 			sb.Append("\"");
 			sb.Append(str);
 			sb.Append("\",");
@@ -537,7 +539,7 @@ public partial class Item : RefCounted {
 		sb.AppendLine(tool_capabilities.ToString());
 
 		sb.AppendLine("[Custom Properties Dictionary]: {");
-		foreach (var kvp in user_def) {
+		foreach (var kvp in user_def){
 			sb.Append("\"");
 			sb.Append(kvp.Key);
 			sb.Append(" = ");
@@ -547,7 +549,7 @@ public partial class Item : RefCounted {
 
 		sb.AppendLine("}");
 		sb.AppendLine("Meta Data: {");
-		foreach (var kvp in metaData.metaData) {
+		foreach (var kvp in metaData.metaData){
 			sb.Append("\"");
 			sb.Append(kvp.Key);
 			sb.Append(" = ");
