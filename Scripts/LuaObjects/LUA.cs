@@ -7,7 +7,7 @@ using Godot;
 #region License / Copyright
 
 /*
- * Copyright © 2023, Michieal.
+ * Copyright © 2023-2026, Michieal.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,9 +27,9 @@ using Godot;
 
 namespace ApophisSoftware.LuaObjects;
 
-public static class LUA {
+public static class LUA{
 	public static readonly LuaApi lua = new();
 
-	static LUA() {
+	static LUA(){
 	}
 }

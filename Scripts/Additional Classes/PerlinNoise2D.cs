@@ -11,7 +11,7 @@ using Vector2 = System.Numerics.Vector2;
 #region License / Copyright
 
 /*
- * Copyright © 2023, Michieal.
+ * Copyright © 2023-2026, Michieal.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,22 +35,22 @@ namespace ApophisSoftware;
 /// Transcribed from http://www.siafoo.net/snippet/144?nolinenos#perlin2003
 /// found at: https://stackoverflow.com/questions/8659351/2d-perlin-noise#8659483
 /// </summary>
-public static class PerlinNoise2D {
+public static class PerlinNoise2D{
 	private static Random _random = new();
-	private static int[]  _permutation;
+	private static int[] _permutation;
 
 	private static Vector2[] _gradients;
 
-	static PerlinNoise2D() {
+	static PerlinNoise2D(){
 		CalculatePermutation(out _permutation);
 		CalculateGradients(out _gradients);
 	}
 
-	private static void CalculatePermutation(out int[] p) {
+	private static void CalculatePermutation(out int[] p){
 		p = Enumerable.Range(0, 256).ToArray();
 
 		/// shuffle the array
-		for (var i = 0; i < p.Length; i++) {
+		for (var i = 0; i < p.Length; i++){
 			var source = _random.Next(p.Length);
 
 			var t = p[i];
@@ -62,19 +62,19 @@ public static class PerlinNoise2D {
 	/// <summary>
 	///     generate a new permutation.
 	/// </summary>
-	public static void Reseed() {
+	public static void Reseed(){
 		CalculatePermutation(out _permutation);
 	}
 
-	private static void CalculateGradients(out Vector2[] grad) {
+	private static void CalculateGradients(out Vector2[] grad){
 		grad = new Vector2[256];
 
-		for (var i = 0; i < grad.Length; i++) {
+		for (var i = 0; i < grad.Length; i++){
 			Vector2 gradient;
 
-			do {
-				gradient = new Vector2((float) (_random.NextDouble() * 2 - 1),
-					(float) (_random.NextDouble() * 2 - 1));
+			do{
+				gradient = new Vector2((float)(_random.NextDouble() * 2 - 1),
+					(float)(_random.NextDouble() * 2 - 1));
 			} while (gradient.LengthSquared() >= 1);
 
 			gradient = Vector2.Normalize(gradient);
@@ -83,28 +83,28 @@ public static class PerlinNoise2D {
 		}
 	}
 
-	private static float Drop(float t) {
+	private static float Drop(float t){
 		t = Math.Abs(t);
 		return 1f - t * t * t * (t * (t * 6 - 15) + 10);
 	}
 
-	private static float Q(float u, float v) {
+	private static float Q(float u, float v){
 		return Drop(u) * Drop(v);
 	}
 
-	public static float Noise(float x, float y) {
-		var cell = new Vector2((float) Math.Floor(x), (float) Math.Floor(y));
+	public static float Noise(float x, float y){
+		var cell = new Vector2((float)Math.Floor(x), (float)Math.Floor(y));
 
 		var total = 0f;
 
-		var corners = new[] {new Vector2(0, 0), new Vector2(0, 1), new Vector2(1, 0), new Vector2(1, 1)};
+		var corners = new[]{ new Vector2(0, 0), new Vector2(0, 1), new Vector2(1, 0), new Vector2(1, 1) };
 
-		foreach (var n in corners) {
+		foreach (var n in corners){
 			var ij = cell + n;
 			var uv = new Vector2(x - ij.X, y - ij.Y);
 
-			var index = _permutation[(int) ij.X % _permutation.Length];
-			index = _permutation[(index + (int) ij.Y) % _permutation.Length];
+			var index = _permutation[(int)ij.X % _permutation.Length];
+			index = _permutation[(index + (int)ij.Y) % _permutation.Length];
 
 			var grad = _gradients[index % _gradients.Length];
 
@@ -115,7 +115,7 @@ public static class PerlinNoise2D {
 	}
 
 
-	private static void GenerateNoiseMap(int width, int height, ref Texture2D noiseTexture, int octaves) {
+	private static void GenerateNoiseMap(int width, int height, ref Texture2D noiseTexture, int octaves){
 		var data = new float[width * height];
 
 		/// track min and max noise value. Used to normalize the result to the 0 to 1.0 range.
@@ -131,7 +131,7 @@ public static class PerlinNoise2D {
 		var amplitude = 1f;
 		// var persistence = 0.25f; // build: marked as unused
 
-		for (var octave = 0; octave < octaves; octave++) {
+		for (var octave = 0; octave < octaves; octave++){
 			/// parallel loop - easy and fast.
 			Parallel.For(0
 				, width * height
@@ -149,8 +149,7 @@ public static class PerlinNoise2D {
 			amplitude /= 2;
 		}
 
-
-		if (noiseTexture != null && (noiseTexture._GetWidth() != width || noiseTexture._GetHeight() != height)) {
+		if (noiseTexture != null && (noiseTexture._GetWidth() != width || noiseTexture._GetHeight() != height)){
 			noiseTexture.Dispose();
 			noiseTexture = null;
 		}

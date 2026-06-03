@@ -8,7 +8,7 @@ using Godot;
 #region License / Copyright
 
 /*
- * Copyright © 2023, Michieal.
+ * Copyright © 2023-2026, Michieal.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ using Godot;
 
 namespace ApophisSoftware.LuaObjects;
 
-public partial class ItemStack : Item {
+public partial class ItemStack : Item{
 	// 
 	// Full item identifier ("item name")
 	// Optional amount
@@ -44,12 +44,12 @@ public partial class ItemStack : Item {
 	/// Sets the Name of the Item.
 	/// Note: Be Careful of setting the identifier often; Hidden Cost. Will search for item definition...
 	/// </summary>
-	public string identifier {
-		get { return name; }
-		set {
+	public string identifier{
+		get{ return name; }
+		set{
 			// try to find the named definition.
-			FindResult x = MCLPP.Instance.FindItem(value);
-			if (x.success) {
+			FindResult x = VF.Instance.FindItem(value);
+			if (x.success){
 				definition = x.definition;
 				itemType = x.type;
 				// TODO: add missing code for what can be done here.
@@ -59,16 +59,16 @@ public partial class ItemStack : Item {
 		}
 	}
 
-	public  int            amount = 1;
-	public  int            wear   = 0;
-	public  Variant        definition; //TODO: Link Definition to base item.
+	public int amount = 1;
+	public int wear = 0;
+	public Variant definition; //TODO: Link Definition to base item.
 	private FindResultType itemType = FindResultType.Item;
 
-	public override string ToString() {
+	public override string ToString(){
 		StringBuilder sb = new StringBuilder(identifier);
 		if (amount != 1) sb.Append(" " + amount.ToString());
 
-		if (wear != 0) {
+		if (wear != 0){
 			if (amount == 1) sb.Append(" " + amount.ToString());
 			sb.Append(" " + wear.ToString());
 		}
@@ -76,42 +76,42 @@ public partial class ItemStack : Item {
 		return sb.ToString();
 	}
 
-	public string to_string() {
+	public string to_string(){
 		return identifier;
 	}
 
 	// Used to take 1 of the Item.
-	public ItemStack take_item() {
+	public ItemStack take_item(){
 		amount -= 1;
 		return this;
 	}
 
-	public void setwear(int value) {
+	public void setwear(int value){
 		wear = value;
 	}
 
-	public string get_description() {
+	public string get_description(){
 		return get_description();
 	}
 
 	#region CTOR
 
-	public ItemStack() {
+	public ItemStack(){
 	}
 
-	public ItemStack CreateItemStack(LuaTuple args) {
+	public ItemStack CreateItemStack(LuaTuple args){
 		ItemStack _itemStack = new ItemStack();
 
-		if (args == null || args.IsEmpty()) {
+		if (args == null || args.IsEmpty()){
 			return _itemStack;
 		}
 
-		if (args.Size() >= 1) {
+		if (args.Size() >= 1){
 			_itemStack.identifier = _itemStack.name; // Note: Hidden Cost. Will search for item definition... 
 		}
 
-		if (args.Size() == 2) {
-			_itemStack.amount = (int) args.ToArray()[1];
+		if (args.Size() == 2){
+			_itemStack.amount = (int)args.ToArray()[1];
 		}
 
 		return _itemStack;

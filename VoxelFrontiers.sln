@@ -1,6 +1,6 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MineclonePP", "MineclonePP.csproj", "{49625F44-45D1-48DA-A748-6E2015B98AA3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VoxelFrontiers", "VoxelFrontiers.csproj", "{49625F44-45D1-48DA-A748-6E2015B98AA3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

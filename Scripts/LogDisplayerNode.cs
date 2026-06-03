@@ -8,7 +8,7 @@ using Godot;
 #region License / Copyright
 
 /*
- * Copyright © 2023, Michieal.
+ * Copyright © 2023-2026, Michieal.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,31 +28,31 @@ using Godot;
 
 namespace ApophisSoftware;
 
-public partial class LogDisplayerNode : Control {
-	[Export] public Button         btnCloseLogView;
-	[Export] public CodeEdit       LogViewDisplay;
+public partial class LogDisplayerNode : Control{
+	[Export] public Button btnCloseLogView;
+	[Export] public CodeEdit LogViewDisplay;
 	[Export] public MenuController MainMenuController;
 
 
 	// Called when the node enters the scene tree for the first time.
-	public override void _Ready() {
+	public override void _Ready(){
 		VisibilityChanged += OnVisibilityChanged;
 		btnCloseLogView.Pressed += BtnCloseLogViewOnPressed;
 	}
 
-	private void BtnCloseLogViewOnPressed() {
+	private void BtnCloseLogViewOnPressed(){
 		LogViewDisplay.Text = "";
 		MainMenuController.BtnExitLogDisplayerOnPressed();
 	}
 
-	private void OnVisibilityChanged() {
-		if (!Visible) {
+	private void OnVisibilityChanged(){
+		if (!Visible){
 			LogViewDisplay.Text = "";
 			return;
 		}
 
 		string LogFile = Utils.GetStoragePath() + "/debug.txt";
-		if (!File.Exists(LogFile)) {
+		if (!File.Exists(LogFile)){
 			LogViewDisplay.Text = "Logfile Not Found.";
 			return;
 		}

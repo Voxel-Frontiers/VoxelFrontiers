@@ -1,5 +1,26 @@
 namespace ApophisSoftware.LuaObjects;
 
+#region License / Copyright
+
+/*
+ * Copyright © 2023-2026, Michieal.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+#endregion
+
 /* NodeBox definition...
  * {
    -- A normal cube; the default in most things
@@ -52,16 +73,16 @@ namespace ApophisSoftware.LuaObjects;
    }
  */
 
-public class BlockBox {
+public class BlockBox{
 	private string _type;
 
 	/// <summary>
 	/// Type can be: "regular", "fixed", "wallmounted", or "connected".
 	/// </summary>
-	public string type {
-		get { return _type; }
-		set {
-			switch (value.ToLower()) {
+	public string type{
+		get{ return _type; }
+		set{
+			switch (value.ToLower()){
 				case "regular":
 					break;
 				case "fixed":
@@ -73,7 +94,7 @@ public class BlockBox {
 				default:
 					Logging.Log("error", "Invalid 'type' given to BlockBox.");
 					return;
-					break;
+		//			break;
 			}
 
 			_type = value;
@@ -102,6 +123,6 @@ public class BlockBox {
 	public BoxDef[] disconnected_sides;
 }
 
-public class BoxDef {
-	private float[] sides;
+public class BoxDef{
+	public float[] sides; // Changed from private to public
 }

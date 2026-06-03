@@ -8,7 +8,7 @@ using Godot;
 #region License / Copyright
 
 /*
- * Copyright © 2023, Michieal.
+ * Copyright © 2023-2026, Michieal.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,14 +28,14 @@ using Godot;
 
 namespace ApophisSoftware.LuaObjects;
 
-public partial class MetaData : RefCounted {
+public partial class MetaData : RefCounted{
 	internal Dictionary<string, string> metaData = new();
 
-	public Variant[] lua_fields() {
-		return new Variant[] {"metaData"};
+	public Variant[] lua_fields(){
+		return new Variant[]{ "metaData" };
 	}
 
-	public void setstring(string key, string value) {
+	public void setstring(string key, string value){
 		// stack:get_meta():set_string("description", "My worn out pick")
 
 		if (metaData.ContainsKey(key))
@@ -44,7 +44,7 @@ public partial class MetaData : RefCounted {
 			metaData.Add(key, value);
 	}
 
-	public string getstring(string key, string defaultval) {
+	public string getstring(string key, string defaultval){
 		if (metaData.ContainsKey(key))
 			return metaData[key];
 		else

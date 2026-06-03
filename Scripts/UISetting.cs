@@ -8,7 +8,7 @@ using Godot;
 #region License / Copyright
 
 /*
- * Copyright © 2023, Michieal.
+ * Copyright © 2023-2026, Michieal.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,30 +28,30 @@ using Godot;
 
 namespace ApophisSoftware;
 
-public partial class UISetting : Node {
+public partial class UISetting : Node{
 	[ExportGroup("UI Setting Properties")] [ExportCategory("Linkages")] [Export]
 	public Label SettingName;
 
-	[Export] public Label        Category;
-	[Export] public Label        Description;
-	[Export] public Label        DefaultValue;
-	[Export] public LineEdit     ValueInput;
+	[Export] public Label Category;
+	[Export] public Label Description;
+	[Export] public Label DefaultValue;
+	[Export] public LineEdit ValueInput;
 	[Export] public OptionButton ValueDropdown;
-	[Export] public CheckBox     ValueToggle;
-	[Export] public Label        ValueRange;
+	[Export] public CheckBox ValueToggle;
+	[Export] public Label ValueRange;
 
-	[ExportCategory("Settings")] [Export] public bool    DEBUG = false;
-	internal                                     Setting ThisSetting;
+	[ExportCategory("Settings")] [Export] public bool DEBUG = false;
+	internal Setting ThisSetting;
 
-	public UISetting() {
+	public UISetting(){
 	}
 
-	private string   settingType;
+	private string settingType;
 	private string[] values;
-	private bool     togVal = false;
-	private bool     UseRange;
+	private bool togVal = false;
+	private bool UseRange;
 
-	internal void InitializeSetting(Setting SettingDefault) {
+	internal void InitializeSetting(Setting SettingDefault){
 		ThisSetting = SettingDefault;
 
 		settingType = ThisSetting.SettingType;
@@ -60,7 +60,7 @@ public partial class UISetting : Node {
 
 		Description.Text = ""; // Clear out the placeholder text, from designing the prefab.
 		Description.TooltipText = "";
-		foreach (string s in ThisSetting.Description) {
+		foreach (string s in ThisSetting.Description){
 			Description.Text += s + "\n";
 			Description.TooltipText += s + "\n";
 		}
@@ -80,34 +80,37 @@ public partial class UISetting : Node {
 		else
 			UseRange = true;
 
-		if (UseRange) {
+		if (UseRange){
 			ValueRange.TooltipText += "Minimum Value = " + ThisSetting.minValue + "\n";
 			ValueRange.TooltipText += "Maximum Value = " + ThisSetting.maxValue + "\n";
 			ValueRange.Text = "Range: " + ThisSetting.minValue;
 			var x = ThisSetting.minValue.ToString().ToFloat();
 			var y = ThisSetting.maxValue.ToString().ToFloat();
-			if (x > y) {
-				ValueRange.Text += " - ∞";     // handle when min is set, but max is null.
+			if (x > y){
+				ValueRange.Text += " - ∞"; // handle when min is set, but max is null.
 				ThisSetting.maxValue = 100000; //grant a max, as it is used to handle validation. 
-			} else if (y > x) {
+			}
+			else if (y > x){
 				ValueRange.Text += " - " + ThisSetting.maxValue;
-			} else {
+			}
+			else{
 				ValueRange.Visible = false; // if it is the same, then it shouldn't be shown.
 				UseRange = false;
 			}
 		}
 
 		// set the current value in case we need to edit it.
-		switch (ThisSetting.SettingType) {
+		switch (ThisSetting.SettingType){
 			case "bool":
 				if (ValueToggle != null)
 					ValueToggle.Toggled += ValueToggleOnToggled;
 
-				if (ThisSetting.CurrentValue.ToString().ToLower().Trim() == "false") {
+				if (ThisSetting.CurrentValue.ToString().ToLower().Trim() == "false"){
 					togVal = false;
 					ValueToggle.Text = "FALSE";
 					ValueToggle.ButtonPressed = false;
-				} else {
+				}
+				else{
 					togVal = true;
 					ValueToggle.Text = "TRUE";
 					ValueToggle.ButtonPressed = true;
@@ -121,14 +124,14 @@ public partial class UISetting : Node {
 				ValueDropdown.TooltipText += "Default Value = " + ThisSetting.DefaultValue + "\n";
 				ValueDropdown.TooltipText += "Options:\n";
 				values = ThisSetting.EnumerationValues;
-				foreach (string opts in values) {
+				foreach (string opts in values){
 					ValueDropdown.AddItem(opts.Trim());
 					ValueDropdown.TooltipText += opts + "\n";
 				}
 
 				int index = 0;
 				for (int i = 0; i < values.Length; i++)
-					if (values[i] == ThisSetting.CurrentValue.ToString()) {
+					if (values[i] == ThisSetting.CurrentValue.ToString()){
 						index = i;
 						break;
 					}
@@ -138,7 +141,7 @@ public partial class UISetting : Node {
 
 				break;
 			default:
-				if (ValueInput != null) {
+				if (ValueInput != null){
 					ValueInput.Text = ThisSetting.CurrentValue.ToString();
 					ValueInput.TextSubmitted += ValueInputOnTextSubmitted;
 					ValueInput.SelectAllOnFocus = true;
@@ -147,7 +150,7 @@ public partial class UISetting : Node {
 					ValueInput.TooltipText = "Any Changes will be validated and saved automatically.\n";
 					ValueInput.TooltipText += "Default Value = " + ThisSetting.DefaultValue + "\n";
 					ValueInput.TooltipText += "Current Value = " + ThisSetting.CurrentValue + "\n";
-					if (UseRange) {
+					if (UseRange){
 						ValueInput.TooltipText += "Minimum Value = " + ThisSetting.minValue + "\n";
 						ValueInput.TooltipText += "Maximum Value = " + ThisSetting.maxValue + "\n";
 					}
@@ -161,34 +164,36 @@ public partial class UISetting : Node {
 		DisplaySetting();
 	}
 
-	private void ValueInputOnFocusExit() {
+	private void ValueInputOnFocusExit(){
 		ValueInputOnTextSubmitted(ValueInput.Text);
 	}
 
-	private void ValueInputOnTextSubmitted(string newtext) {
+	private void ValueInputOnTextSubmitted(string newtext){
 		ValueInput.TooltipText = "Any Changes will be validated and saved automatically.\n";
 		ValueInput.TooltipText += "Default Value = " + ThisSetting.DefaultValue + "\n";
 		ValueInput.TooltipText += "Current Value = " + ThisSetting.CurrentValue + "\n";
 
-		if (UseRange) {
+		if (UseRange){
 			ValueInput.TooltipText += "Minimum Value = " + ThisSetting.minValue + "\n";
 			ValueInput.TooltipText += "Maximum Value = " + ThisSetting.maxValue + "\n";
 			UseRange = true;
 		}
 
-		switch (ThisSetting.SettingType) {
+		switch (ThisSetting.SettingType){
 			case "int":
-				try {
+				try{
 					int val = newtext.ToInt();
-					if (UseRange) {
-						if (val <= (int) ThisSetting.maxValue && val >= (int) ThisSetting.minValue)
+					if (UseRange){
+						if (val <= (int)ThisSetting.maxValue && val >= (int)ThisSetting.minValue)
 							ThisSetting.CurrentValue = val;
 						else
 							ValueInput.Text = ThisSetting.CurrentValue.ToString();
-					} else {
+					}
+					else{
 						ThisSetting.CurrentValue = val;
 					}
-				} catch (Exception e) {
+				}
+				catch (Exception e){
 					Logging.Log(ThisSetting.SettingName + ": Setting Value Conversion error for INT Value.\n" +
 					            e.InnerException);
 					ValueInput.Text = ThisSetting.CurrentValue.ToString();
@@ -196,17 +201,19 @@ public partial class UISetting : Node {
 
 				break;
 			case "float":
-				try {
+				try{
 					float val = newtext.ToInt();
-					if (UseRange) {
-						if (val <= (float) ThisSetting.maxValue && val >= (float) ThisSetting.minValue)
+					if (UseRange){
+						if (val <= (float)ThisSetting.maxValue && val >= (float)ThisSetting.minValue)
 							ThisSetting.CurrentValue = val;
 						else
 							ValueInput.Text = ThisSetting.CurrentValue.ToString();
-					} else {
+					}
+					else{
 						ThisSetting.CurrentValue = val;
 					}
-				} catch (Exception e) {
+				}
+				catch (Exception e){
 					Logging.Log(ThisSetting.SettingName + ": Setting Value Conversion error for FLOAT Value.\n" +
 					            e.InnerException);
 					ValueInput.Text = ThisSetting.CurrentValue.ToString();
@@ -219,23 +226,24 @@ public partial class UISetting : Node {
 		}
 	}
 
-	private void ValueToggleOnToggled(bool buttonpressed) {
+	private void ValueToggleOnToggled(bool buttonpressed){
 		togVal = buttonpressed;
-		if (togVal) {
+		if (togVal){
 			ThisSetting.CurrentValue = "true";
 			ValueToggle.Text = "TRUE";
-		} else {
+		}
+		else{
 			ThisSetting.CurrentValue = "false";
 			ValueToggle.Text = "FALSE";
 		}
 	}
 
-	private void ValueDropdownOnItemSelected(long index) {
+	private void ValueDropdownOnItemSelected(long index){
 		ThisSetting.CurrentValue = values[index];
 		if (DEBUG) Logging.Log("Dropdown Value changed to: " + ThisSetting.CurrentValue);
 	}
 
-	public void DisplaySetting() {
+	public void DisplaySetting(){
 		// this is simple - hide the display value and show the editable version.
 
 		if (UseRange)
@@ -243,7 +251,7 @@ public partial class UISetting : Node {
 		else
 			ValueRange.Visible = false;
 
-		switch (ThisSetting.SettingType) {
+		switch (ThisSetting.SettingType){
 			case "bool":
 				ValueToggle.Visible = true;
 				break;
@@ -256,7 +264,7 @@ public partial class UISetting : Node {
 		}
 	}
 
-	internal void Remove() {
+	internal void Remove(){
 		QueueFree();
 	}
 }

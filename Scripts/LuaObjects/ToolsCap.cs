@@ -9,7 +9,7 @@ using Godot;
 #region License / Copyright
 
 /*
- * Copyright © 2023, Michieal.
+ * Copyright © 2023-2026, Michieal.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,22 +29,22 @@ using Godot;
 
 namespace ApophisSoftware.LuaObjects;
 
-public struct GroupCap {
-	public string   name     = "";
-	public double[] times    = new[] {0.0d};
-	public int      uses     = 0;
-	public int      maxlevel = 0;
+public struct GroupCap{
+	public string name = "";
+	public double[] times = new[]{ 0.0d };
+	public int uses = 0;
+	public int maxlevel = 0;
 
-	public GroupCap() {
+	public GroupCap(){
 	}
 
-	public override string ToString() {
+	public override string ToString(){
 		StringBuilder sb = new StringBuilder();
 
 		sb.Append(name);
 		sb.Append(" = {");
 		sb.Append("times = {");
-		foreach (double d in times) {
+		foreach (double d in times){
 			sb.Append(d.ToString());
 			sb.Append(", ");
 		}
@@ -59,8 +59,8 @@ public struct GroupCap {
 	}
 }
 
-public partial class ToolsCap : RefCounted {
-	/*
+public partial class ToolsCap : RefCounted{
+	/* from Luanti.
 	tool_capabilities = {
 		full_punch_interval = 1.0,
 		max_drop_level = 0,
@@ -76,26 +76,24 @@ public partial class ToolsCap : RefCounted {
 		-- by punching them (0 = infinite uses).
 			-- For compatibility, this is automatically set from the first
 			-- suitable groupcap using the formula "uses * 3^(maxlevel - 1)".
-			-- It is recommend to set this explicitly instead of relying on the
+			-- It is recommended to set this explicitly instead of relying on the
 		-- fallback behavior.
 	},
 	*/
 
-	// TODO: Finish this. 
-
-	public double                                    full_punch_interval = 1.0d;
-	public int                                       max_drop_level = 0;
-	public List<GroupCap>                            groupcaps = new();
+	public double full_punch_interval = 1.0d;
+	public int max_drop_level = 0;
+	public List<GroupCap> groupcaps = new();
 	public Godot.Collections.Dictionary<string, int> damage_groups = new Godot.Collections.Dictionary<string, int>();
 
-	public int? punch_attack_uses {
+	public int? punch_attack_uses{
 		get => _punch_attack_uses;
 		set => _punch_attack_uses = value;
 	}
 
 	private int? _punch_attack_uses = null;
 
-	public override string ToString() {
+	public override string ToString(){
 		StringBuilder sb = new StringBuilder();
 		sb.Append("full_punch_interval: ");
 		sb.AppendLine(full_punch_interval.ToString());

@@ -1,144 +1,154 @@
 using Godot;
 using System.Collections.Generic;
-using ApophisSoftware.LuaObjects; // Assuming NodeBlock is in this namespace
+using ApophisSoftware.LuaObjects;
 
-public class NodeRegistry : Node
-{
-    public class NodeDefinition
-    {
-        public int Id;
-        public string Name;
-        public string[] TexturePaths; // Paths to the texture images for each face
-        public bool IsTransparent;
-        public NodeBlock OriginalNodeBlock; // Reference to the original NodeBlock for full access
-    }
+#region License / Copyright
 
-    private Dictionary<int, NodeDefinition> _nodesById = new Dictionary<int, NodeDefinition>();
-    private Dictionary<string, NodeDefinition> _nodesByName = new Dictionary<string, NodeDefinition>();
-    private int _nextId = 1; // Start ID from 1, 0 can be reserved for 'air' or 'empty'
+/*
+ * Copyright © 2023-2026, Michieal.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 
-    public override void _Ready()
-    {
-        // This NodeRegistry will be populated by MCLPP's registered nodes.
-        // It's crucial that MCLPP.Instance is ready and has registered its nodes
-        // before this _Ready method attempts to access them.
-        // If MCLPP is an Autoload, its _Ready will typically run before other nodes.
-        PopulateFromMCLPP();
-        GD.Print("NodeRegistry initialized and populated from MCLPP.");
-    }
+#endregion
 
-    /// <summary>
-    /// Populates this NodeRegistry with definitions from MCLPP.Instance.registered_nodes.
-    /// This should be called after MCLPP has finished registering all its Lua-defined nodes.
-    /// </summary>
-    public void PopulateFromMCLPP()
-    {
-        if (MCLPP.Instance == null)
-        {
-            GD.PrintErr("NodeRegistry: MCLPP.Instance is null. Cannot populate nodes.");
-            return;
-        }
+public partial class NodeRegistry : Node{
+	public class NodeDefinition{
+		public int Id;
+		public string Name;
+		public string[] TexturePaths; // Paths to the texture images for each face
+		public bool IsTransparent;
+		public string MeshPath; // Path to a custom 3D model resource
+		public NodeBlock OriginalNodeBlock; // Reference to the original NodeBlock for full access
+	}
 
-        if (MCLPP.Instance.registered_nodes == null || MCLPP.Instance.registered_nodes.Count == 0)
-        {
-            GD.Print("NodeRegistry: MCLPP.Instance.registered_nodes is empty. No nodes to populate.");
-            // We should at least register 'air' if it's not coming from Lua
-            RegisterInternalNode("Air", System.Array.Empty<string>(), true);
-            return;
-        }
+	private Dictionary<int, NodeDefinition> _nodesById = new Dictionary<int, NodeDefinition>();
+	private Dictionary<string, NodeDefinition> _nodesByName = new Dictionary<string, NodeDefinition>();
+	private int _nextId = 1; // Start ID from 1, 0 can be reserved for 'air' or 'empty'
 
-        // Clear existing definitions to avoid duplicates if called multiple times
-        _nodesById.Clear();
-        _nodesByName.Clear();
-        _nextId = 1; // Reset ID counter
+	public override void _Ready(){
+		// This NodeRegistry will be populated by VF's registered nodes.
+		// It's crucial that VF.Instance is ready and has registered its nodes
+		// before this _Ready method attempts to access them.
+		// If VF is an Autoload, its _Ready will typically run before other nodes.
+		PopulateFromVF();
+		GD.Print("NodeRegistry initialized and populated from VF.");
+	}
 
-        // Register 'Air' as ID 0 if it's not already registered by Lua
-        // Assuming 'Air' is a fundamental block that might not always be explicitly registered in Lua
-        if (!MCLPP.Instance.registered_nodes.ContainsKey("air")) // Minetest uses lowercase for node names
-        {
-            RegisterInternalNode("Air", System.Array.Empty<string>(), true);
-        }
+	/// <summary>
+	/// Populates this NodeRegistry with definitions from VF.Instance.registered_nodes.
+	/// This should be called after VF has finished registering all its Lua-defined nodes.
+	/// </summary>
+	public void PopulateFromVF(){
+		if (VF.Instance == null){
+			GD.PrintErr("NodeRegistry: VF.Instance is null. Cannot populate nodes.");
+			return;
+		}
 
-        foreach (var entry in MCLPP.Instance.registered_nodes)
-        {
-            string nodeName = entry.Key;
-            NodeBlock nodeBlock = entry.Value;
+		if (VF.Instance.registered_nodes == null || VF.Instance.registered_nodes.Count == 0){
+			GD.Print("NodeRegistry: VF.Instance.registered_nodes is empty. No nodes to populate.");
+			// We should at least register 'air' if it's not coming from Lua
+			RegisterInternalNode("Air", System.Array.Empty<string>(), true, "");
+			return;
+		}
 
-            // Ensure 'Air' is registered with ID 0 if it came from Lua
-            if (nodeName.ToLower() == "air" && _nodesById.ContainsKey(0))
-            {
-                // If 'Air' was already registered internally with ID 0, update its properties
-                // or skip if it's already correctly set.
-                // For now, we'll assume the internal registration is sufficient if Lua also defines it.
-                // If Lua defines 'air', we should use its properties.
-                _nodesById.Remove(0); // Remove the internally registered 'Air'
-                _nodesByName.Remove("Air");
-                _nextId = 1; // Reset _nextId to 1 after registering 'Air' as 0
-            }
-            
-            // Determine transparency based on NodeBlock's properties
-            bool isTransparent = nodeBlock.use_texture_alpha != "opaque";
+		// Clear existing definitions to avoid duplicates if called multiple times
+		_nodesById.Clear();
+		_nodesByName.Clear();
+		_nextId = 1; // Reset ID counter
 
-            // Use the internal registration method to assign an ID and store the definition
-            RegisterInternalNode(nodeName, nodeBlock.Tiles, isTransparent, nodeBlock);
-        }
-    }
+		// Register 'Air' as ID 0 if it's not already registered by Lua
+		// Assuming 'Air' is a fundamental block that might not always be explicitly registered in Lua
+		if (!VF.Instance.registered_nodes.ContainsKey("air")) // Minetest uses lowercase for node names
+		{
+			RegisterInternalNode("Air", System.Array.Empty<string>(), true, "");
+		}
 
-    /// <summary>
-    /// Internal method to register a node definition.
-    /// </summary>
-    private int RegisterInternalNode(string name, string[] texturePaths, bool isTransparent, NodeBlock originalNodeBlock = null)
-    {
-        if (_nodesByName.ContainsKey(name))
-        {
-            GD.PrintErr($"Node with name '{name}' already registered in NodeRegistry.");
-            return _nodesByName[name].Id;
-        }
+		foreach (var entry in VF.Instance.registered_nodes){
+			string nodeName = entry.Key;
+			NodeBlock nodeBlock = entry.Value;
 
-        NodeDefinition def = new NodeDefinition
-        {
-            Id = _nextId++,
-            Name = name,
-            TexturePaths = texturePaths,
-            IsTransparent = isTransparent,
-            OriginalNodeBlock = originalNodeBlock
-        };
+			// Ensure 'Air' is registered with ID 0 if it came from Lua
+			if (nodeName.ToLower() == "air" && _nodesById.ContainsKey(0)){
+				// If 'Air' was already registered internally with ID 0, update its properties
+				// or skip if it's already correctly set.
+				// For now, we'll assume the internal registration is sufficient if Lua also defines it.
+				// If Lua defines 'air', we should use its properties.
+				_nodesById.Remove(0); // Remove the internally registered 'Air'
+				_nodesByName.Remove("Air");
+				_nextId = 1; // Reset _nextId to 1 after registering 'Air' as 0
+			}
 
-        // Special handling for 'Air' to ensure it gets ID 0 if not already taken
-        if (name.ToLower() == "air" && !_nodesById.ContainsKey(0))
-        {
-            def.Id = 0;
-            _nextId = 1; // Ensure next ID starts from 1 after 0 is used
-        }
-        else if (name.ToLower() == "air" && _nodesById.ContainsKey(0) && _nodesById[0].Name.ToLower() != "air")
-        {
-            // If ID 0 is taken by something else, and we're trying to register 'air',
-            // assign it the next available ID. This scenario should ideally not happen
-            // if 'Air' is consistently registered first or with ID 0.
-            GD.PrintErr($"NodeRegistry: 'Air' node could not be assigned ID 0 as it's already taken by '{_nodesById[0].Name}'. Assigning next available ID.");
-        }
+			// Determine transparency based on NodeBlock's properties
+			bool isTransparent = nodeBlock.use_texture_alpha != "opaque";
+
+			// Use the internal registration method to assign an ID and store the definition
+			RegisterInternalNode(nodeName, nodeBlock.Tiles, isTransparent, nodeBlock.MeshPath, nodeBlock);
+		}
+	}
+
+	/// <summary>
+	/// Internal method to register a node definition.
+	/// </summary>
+	private int RegisterInternalNode(string name, string[] texturePaths, bool isTransparent, string meshPath,
+		NodeBlock originalNodeBlock = null){
+		if (_nodesByName.ContainsKey(name)){
+			GD.PrintErr($"Node with name '{name}' already registered in NodeRegistry.");
+			return _nodesByName[name].Id;
+		}
+
+		NodeDefinition def = new NodeDefinition{
+			Id = _nextId++,
+			Name = name,
+			TexturePaths = texturePaths,
+			IsTransparent = isTransparent,
+			MeshPath = meshPath,
+			OriginalNodeBlock = originalNodeBlock
+		};
+
+		// Special handling for 'Air' to ensure it gets ID 0 if not already taken
+		if (name.ToLower() == "air" && !_nodesById.ContainsKey(0)){
+			def.Id = 0;
+			_nextId = 1; // Ensure next ID starts from 1 after 0 is used
+		}
+		else if (name.ToLower() == "air" && _nodesById.ContainsKey(0) && _nodesById[0].Name.ToLower() != "air"){
+			// If ID 0 is taken by something else, and we're trying to register 'air',
+			// assign it the next available ID. This scenario should ideally not happen
+			// if 'Air' is consistently registered first or with ID 0.
+			GD.PrintErr(
+				$"NodeRegistry: 'Air' node could not be assigned ID 0 as it's already taken by '{_nodesById[0].Name}'. Assigning next available ID.");
+		}
 
 
-        _nodesById[def.Id] = def;
-        _nodesByName[name] = def;
-        GD.Print($"Registered node in C# NodeRegistry: {name} (ID: {def.Id}) with {texturePaths.Length} texture(s). Transparent: {isTransparent}");
-        return def.Id;
-    }
+		_nodesById[def.Id] = def;
+		_nodesByName[name] = def;
+		GD.Print(
+			$"Registered node in C# NodeRegistry: {name} (ID: {def.Id}) with {texturePaths.Length} texture(s). Transparent: {isTransparent}, MeshPath: {meshPath}");
+		return def.Id;
+	}
 
-    public NodeDefinition GetNodeDefinition(int id)
-    {
-        _nodesById.TryGetValue(id, out NodeDefinition def);
-        return def;
-    }
+	public NodeDefinition GetNodeDefinition(int id){
+		_nodesById.TryGetValue(id, out NodeDefinition def);
+		return def;
+	}
 
-    public NodeDefinition GetNodeDefinition(string name)
-    {
-        _nodesByName.TryGetValue(name, out NodeDefinition def);
-        return def;
-    }
+	public NodeDefinition GetNodeDefinition(string name){
+		_nodesByName.TryGetValue(name, out NodeDefinition def);
+		return def;
+	}
 
-    public IEnumerable<NodeDefinition> GetAllNodeDefinitions()
-    {
-        return _nodesById.Values;
-    }
+	public IEnumerable<NodeDefinition> GetAllNodeDefinitions(){
+		return _nodesById.Values;
+	}
 }
