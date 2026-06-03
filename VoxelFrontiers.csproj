@@ -4,11 +4,11 @@
         <EnableDynamicLoading>true</EnableDynamicLoading>
     </PropertyGroup>
     <ItemGroup>
-        <Content Include="Scripts\LuaObjects\Lua\builtin.lua"/>
+        <Content Include="Scripts\LuaObjects\Lua\builtin.lua" />
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Update="Godot.SourceGenerators" Version="4.6.3"/>
-        <PackageReference Update="GodotSharp" Version="4.6.3"/>
-        <PackageReference Update="GodotSharpEditor" Version="4.6.3"/>
+        <PackageReference Update="Godot.SourceGenerators" Version="4.2.1" />
+        <PackageReference Update="GodotSharp" Version="4.2.1" />
+        <PackageReference Update="GodotSharpEditor" Version="4.2.1" />
     </ItemGroup>
 </Project>

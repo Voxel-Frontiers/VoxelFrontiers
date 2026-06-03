@@ -101,9 +101,18 @@ public partial class SCC : Node{
 	// Http Net Access
 	// HttpClient lifecycle management best practices:
 	// https://learn.microsoft.com/dotnet/fundamentals/networking/http/httpclient-guidelines#recommended-use
-	private static HttpClient SourceClient = new(){
-		BaseAddress = new Uri("https://git.minetest.land")
-	};
+	private static HttpClient SourceClient;
+
+	// Static constructor to initialize HttpClient and set default headers
+	static SCC()
+	{
+		SourceClient = new HttpClient();
+		// Set a generic User-Agent to mimic a browser or a common client
+		SourceClient.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (compatible; VoxelFrontiersClient/1.0)");
+		// Also add an Accept header, explicitly stating we want a zip file or binary stream
+		SourceClient.DefaultRequestHeaders.Accept.ParseAdd("application/zip");
+		SourceClient.DefaultRequestHeaders.Accept.ParseAdd("application/octet-stream");
+	}
 
 	public Utils Utils => _utils;
 
@@ -529,12 +538,24 @@ public partial class SCC : Node{
 			dirScanCoroutine = null;
 		}
 
-		if (File.Exists(_ZipFile))
-			File.Delete(_ZipFile); // start with a fresh download.
-		if (Directory.Exists(GamePath)){ // clear out any remaining items in here, to install over.
-			Directory.Delete(GamePath, true);
+		try {
+			if (File.Exists(_ZipFile)) {
+				File.Delete(_ZipFile); // start with a fresh download.
+				Logging.Log("info", $"Deleted existing zip file: {_ZipFile}");
+			}
+
+			if (Directory.Exists(GamePath)){ // clear out any remaining items in here, to install over.
+				Directory.Delete(GamePath, true);
+				Logging.Log("info", $"Deleted existing game directory: {GamePath}");
+			}
 			Directory.CreateDirectory(GamePath); // recreate the game source storage dir.
+			Logging.Log("info", $"Recreated game directory: {GamePath}");
+		} catch (Exception ex) {
+			Logging.Log("error", $"Error preparing game directory for download: {ex.Message}");
+			MenuHandler.ShowDownloadError("An error occurred while preparing to download the game source. Please check permissions.");
+			return; // Stop here if we can't prepare the directory
 		}
+
 
 		// ------------------------------------------------------
 		StatusLabel.Text = Utils.S("Downloading Game Source; Please wait.");
@@ -549,16 +570,31 @@ public partial class SCC : Node{
 
 	private async Task DownloadFile(HttpClient httpClient){
 		using HttpResponseMessage response = await
-			httpClient.GetAsync("Michieal/MineClone2/archive/master.zip");
+			httpClient.GetAsync("https://github.com/Voxel-Frontiers/VL4VF/archive/refs/heads/master.zip", HttpCompletionOption.ResponseHeadersRead); // Use ResponseHeadersRead
+		                              // https://github.com/Voxel-Frontiers/VL4VF/archive/refs/heads/master.zip
 
 		if (response is{ StatusCode: HttpStatusCode.OK }){
-			byte[] responseByteArray = await response.Content.ReadAsByteArrayAsync();
-			using (FileStream fileStream = new FileStream(_ZipFile, FileMode.Create)){
-				// save the downloaded file out...
-				await fileStream.WriteAsync(responseByteArray, 0, responseByteArray.Length);
-			}
+			try {
+				using (FileStream fileStream = new FileStream(_ZipFile, FileMode.Create, System.IO.FileAccess.Write, FileShare.None)){
+					await response.Content.CopyToAsync(fileStream); // Stream directly to file
+				}
+				Logging.Log("info", $"Download complete. File saved to: {_ZipFile}");
+				// Verify file size if possible (optional, but good for debugging)
+				FileInfo fileInfo = new FileInfo(_ZipFile);
+				if (response.Content.Headers.ContentLength.HasValue) {
+					if (fileInfo.Length != response.Content.Headers.ContentLength.Value) {
+						Logging.Log("error", $"Downloaded file size mismatch! Expected {response.Content.Headers.ContentLength.Value} bytes, got {fileInfo.Length} bytes.");
+						MenuHandler.ShowDownloadError("Downloaded file is incomplete. Please try again.");
+						return; // Stop processing if file is incomplete
+					}
+				}
+				Logging.Log("info", $"Downloaded file size: {fileInfo.Length} bytes.");
 
-			ExtractSource();
+				ExtractSource();
+			} catch (Exception ex) {
+				Logging.Log("error", $"Error saving downloaded file: {ex.Message}");
+				MenuHandler.ShowDownloadError("An error occurred while saving the downloaded file. Please try again.");
+			}
 		}
 		else{
 			Logging.Log("error", "Error retrieving Game Source: \n" + response.ReasonPhrase);
@@ -569,23 +605,48 @@ public partial class SCC : Node{
 
 	private void ExtractSource(){
 		StatusLabel.Text = Utils.S("Game Source Download Complete! Extracting.");
-		using (ZipArchive GameSourceZip = ZipFile.Open(_ZipFile, ZipArchiveMode.Read)){
-			try{
-				// This method should handle the extraction of the downloaded ZIP file.
-				GameSourceZip.ExtractToDirectory(GamePath, true);
-			}
-			catch (Exception ex){
-				// Handle extraction errors
-				Logging.Log("error", "Extraction Error: " + ex.Message);
-				MenuHandler.ShowDownloadError("An error has occurred trying to extract the source code.\n" +
-				                              "Trying to redownload the source code.");
-				DownloadGameSource();
-				return;
-			}
+		Logging.Log("info", $"Attempting to extract '{_ZipFile}' to '{GamePath}'");
 
-			StatusLabel.Text = Utils.S("Game Source Extracted. Scanning Directories.");
+		if (!File.Exists(_ZipFile)) {
+			Logging.Log("error", $"Extraction Error: Zip file not found at '{_ZipFile}'.");
+			MenuHandler.ShowDownloadError("The downloaded zip file was not found. Please try downloading again.");
+			DownloadGameSource(); // Attempt to redownload
+			return;
 		}
 
+		try{
+			using (ZipArchive GameSourceZip = ZipFile.Open(_ZipFile, ZipArchiveMode.Read)){
+				GameSourceZip.ExtractToDirectory(GamePath, true);
+				Logging.Log("info", "Extraction successful.");
+			}
+		}
+		catch (InvalidDataException ex){
+			Logging.Log("error", $"Extraction Error: The zip file '{_ZipFile}' is corrupted or not a valid zip archive. Message: {ex.Message}");
+			MenuHandler.ShowDownloadError("The downloaded game source is corrupted. Trying to redownload.");
+			DownloadGameSource(); // Attempt to redownload
+			return;
+		}
+		catch (IOException ex){
+			Logging.Log("error", $"Extraction Error: An I/O error occurred during extraction (e.g., permissions, disk space). Message: {ex.Message}");
+			MenuHandler.ShowDownloadError("An error occurred accessing files during extraction. Please check permissions and disk space. Trying to redownload.");
+			DownloadGameSource(); // Attempt to redownload
+			return;
+		}
+		catch (UnauthorizedAccessException ex){
+			Logging.Log("error", $"Extraction Error: Access to path '{GamePath}' is denied. Message: {ex.Message}");
+			MenuHandler.ShowDownloadError("Permission denied during extraction. Please ensure the application has write access to the game directory. Trying to redownload.");
+			DownloadGameSource(); // Attempt to redownload
+			return;
+		}
+		catch (Exception ex){
+			// Catch any other unexpected exceptions
+			Logging.Log("error", $"Extraction Error: An unexpected error occurred during extraction. Message: {ex.Message}");
+			MenuHandler.ShowDownloadError("An unexpected error occurred during extraction. Trying to redownload.");
+			DownloadGameSource(); // Attempt to redownload
+			return;
+		}
+
+		StatusLabel.Text = Utils.S("Game Source Extracted. Scanning Directories.");
 
 		if (File.Exists(_ZipFile))
 			File.Delete(_ZipFile); // clean up the download to save space.
